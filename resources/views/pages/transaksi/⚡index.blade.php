@@ -499,9 +499,9 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
     </div>
 @elseif ($showPayment)
     {{-- ==================== PAYMENT VIEW ==================== --}}
-    <div class="flex h-screen flex-col bg-zinc-50 dark:bg-zinc-900 lg:flex-row">
+    <div class="flex h-screen flex-col bg-zinc-50 dark:bg-zinc-900 lg:flex-row overflow-hidden">
         {{-- Left: Order Summary --}}
-        <div class="flex w-full flex-col border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 lg:w-96 lg:border-b-0 lg:border-r">
+        <div class="hidden lg:flex w-full flex-col border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 lg:w-96 lg:border-b-0 lg:border-r">
             <div class="flex items-center gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
                 <button wire:click="closePayment" class="text-zinc-400 transition hover:text-zinc-700 dark:hover:text-white">
                     <flux:icon name="arrow-left" class="size-5" />
@@ -561,7 +561,15 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
         </div>
 
         {{-- Right: Calculator --}}
-        <div class="flex flex-1 flex-col items-center justify-center p-6">
+        <div class="flex flex-1 flex-col items-center overflow-y-auto p-4 lg:justify-center lg:p-6">
+            {{-- Mobile Back Button --}}
+            <div class="mb-4 flex w-full max-w-md items-center gap-3 lg:hidden">
+                <button wire:click="closePayment" class="text-zinc-400 transition hover:text-zinc-700 dark:hover:text-white">
+                    <flux:icon name="arrow-left" class="size-5" />
+                </button>
+                <flux:heading size="lg">{{ __('Pembayaran') }}</flux:heading>
+            </div>
+
             <div class="w-full max-w-md space-y-6">
                 {{-- Total Tagihan --}}
                 <div class="rounded-2xl bg-white p-6 text-center shadow-sm dark:bg-zinc-800">
@@ -659,7 +667,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
     </div>
 @else
     {{-- ==================== MAIN POS VIEW ==================== --}}
-    <div class="flex h-screen" x-data="{ showVarianPicker: false, varianList: [], produkNama: '' }">
+    <div class="flex h-screen flex-col lg:flex-row" x-data="{ showVarianPicker: false, varianList: [], produkNama: '', showMobileCart: false }">
         {{-- LEFT: Product Area --}}
         <div class="flex flex-1 flex-col overflow-hidden">
             {{-- Top Bar --}}
@@ -667,8 +675,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                 {{-- Top Row: Menu, Outlet, Orders --}}
                 <div class="flex items-center justify-between px-4 py-3">
                     <div class="flex items-center gap-3">
-                        <flux:button variant="ghost" icon="bars-3" :href="route('dashboard')" wire:navigate size="sm" class="lg:hidden" />
-                        <flux:button variant="ghost" icon="bars-3" :href="route('dashboard')" wire:navigate size="sm" class="hidden lg:flex" />
+                        <flux:button variant="ghost" icon="bars-3" :href="route('dashboard')" wire:navigate size="sm" />
                         <span class="text-lg font-bold text-zinc-700 dark:text-zinc-200 uppercase tracking-wide">
                             {{ \App\Models\Outlet::first()->nama ?? 'POS KASIR' }}
                         </span>
@@ -680,6 +687,11 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                 </div>
 
                 {{-- Bottom Row: Categories, Search --}}
+                {{-- Search (mobile: full width) --}}
+                <div class="border-t border-zinc-100 px-4 py-2 dark:border-zinc-700 lg:hidden">
+                    <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Cari...') }}" clearable size="sm" />
+                </div>
+
                 <div class="flex items-center gap-4 border-t border-zinc-100 px-4 py-3 dark:border-zinc-700">
                     <div class="flex flex-1 items-center gap-2 overflow-x-auto">
                         <flux:button
@@ -702,15 +714,15 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                         @endforeach
                     </div>
 
-                    <div class="w-64 shrink-0">
+                    <div class="hidden w-64 shrink-0 lg:block">
                         <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Cari...') }}" clearable size="sm" />
                     </div>
                 </div>
             </div>
 
             {{-- Product Grid --}}
-            <div class="flex-1 overflow-y-auto p-4">
-                <div class="grid grid-cols-3 gap-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div class="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4">
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     @forelse ($this->produks as $produk)
                         @if ($produk->varians->count() === 1)
                             <button
@@ -782,8 +794,8 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
             </div>
         </div>
 
-        {{-- RIGHT: Cart Sidebar --}}
-        <div class="flex w-80 flex-col border-l border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 lg:w-96">
+        {{-- RIGHT: Cart Sidebar (Desktop) --}}
+        <div class="hidden lg:flex w-80 flex-col border-l border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 lg:w-96">
             {{-- Cart Header --}}
             <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
                 <div class="min-w-0 flex-1">
@@ -921,6 +933,193 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                         <span>Rp {{ number_format($this->grandTotal, 0, ',', '.') }} ›</span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        {{-- ==================== MOBILE FLOATING CART BUTTON ==================== --}}
+        @if (!empty($cart))
+            <div class="fixed bottom-4 left-4 right-4 z-40 lg:hidden">
+                <button
+                    x-on:click="showMobileCart = true"
+                    class="flex w-full items-center justify-between rounded-2xl bg-emerald-600 px-5 py-4 text-white shadow-lg shadow-emerald-900/30 transition active:scale-[0.98]"
+                >
+                    <div class="flex items-center gap-3">
+                        <div class="flex size-8 items-center justify-center rounded-full bg-white/20">
+                            <flux:icon name="shopping-cart" class="size-5" />
+                        </div>
+                        <span class="font-semibold">{{ count($cart) }} {{ __('item') }}</span>
+                    </div>
+                    <span class="text-lg font-bold">Rp {{ number_format($this->grandTotal, 0, ',', '.') }} ›</span>
+                </button>
+            </div>
+        @endif
+
+        {{-- ==================== MOBILE CART SLIDE-UP ==================== --}}
+        <div
+            x-show="showMobileCart"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-50 lg:hidden"
+            x-cloak
+        >
+            {{-- Backdrop --}}
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" x-on:click="showMobileCart = false"></div>
+
+            {{-- Cart Panel --}}
+            <div
+                x-show="showMobileCart"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="translate-y-full"
+                x-transition:enter-end="translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="translate-y-0"
+                x-transition:leave-end="translate-y-full"
+                class="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-3xl bg-white shadow-2xl dark:bg-zinc-800"
+            >
+                {{-- Handle --}}
+                <div class="flex justify-center pt-3 pb-1">
+                    <div class="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600"></div>
+                </div>
+
+                {{-- Cart Header --}}
+                <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                    <div class="flex items-center gap-2">
+                        <flux:icon name="shopping-cart" class="size-5 text-zinc-400" />
+                        <flux:heading size="lg">{{ __('Keranjang') }} ({{ count($cart) }})</flux:heading>
+                    </div>
+                    <button x-on:click="showMobileCart = false" class="text-zinc-400 transition hover:text-zinc-700 dark:hover:text-white">
+                        <flux:icon name="x-mark" class="size-5" />
+                    </button>
+                </div>
+
+                {{-- Cart Body --}}
+                <div class="flex-1 overflow-y-auto">
+                    @if (empty($cart))
+                        <div class="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
+                            <div class="mb-4 flex size-20 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-700">
+                                <flux:icon name="shopping-cart" class="size-10 text-zinc-300 dark:text-zinc-500" />
+                            </div>
+                            <flux:heading size="lg" class="mb-1">{{ __('Keranjang Kosong') }}</flux:heading>
+                            <flux:text class="text-sm text-zinc-400">{{ __('Silakan masukkan pesanan dari pelanggan') }}</flux:text>
+                        </div>
+                    @else
+                        <div class="divide-y divide-zinc-100 dark:divide-zinc-700">
+                            @foreach ($cart as $index => $item)
+                                <div wire:key="mobile-cart-{{ $index }}" class="px-4 py-3">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm font-medium text-zinc-900 dark:text-white line-clamp-1">{{ $item['nama_produk'] }}</p>
+                                            @if ($item['nama_varian'] !== 'Default')
+                                                <p class="text-xs text-zinc-500">{{ $item['nama_varian'] }}</p>
+                                            @endif
+                                            <p class="mt-0.5 text-xs text-zinc-400">
+                                                @if ($item['diskon_aktif'])
+                                                    <span class="line-through">Rp {{ number_format($item['harga'], 0, ',', '.') }}</span>
+                                                    <span class="text-emerald-500 font-medium">Rp {{ number_format($item['harga'] - $item['diskon_per_item'], 0, ',', '.') }}</span>
+                                                @else
+                                                    Rp {{ number_format($item['harga'], 0, ',', '.') }}
+                                                @endif
+                                            </p>
+                                            @if ($item['diskon_aktif'])
+                                                <p class="text-xs text-emerald-500">🏷️ {{ $item['diskon_nama'] }}</p>
+                                            @endif
+                                        </div>
+                                        <button wire:click="removeItem({{ $index }})" class="shrink-0 text-zinc-300 transition hover:text-red-500 dark:text-zinc-600">
+                                            <flux:icon name="x-mark" class="size-4" />
+                                        </button>
+                                    </div>
+                                    <div class="mt-2 flex items-center justify-between">
+                                        <div class="flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-600">
+                                            <button wire:click="decrementQty({{ $index }})" class="px-2.5 py-1 text-zinc-500 transition hover:text-zinc-900 dark:hover:text-white">
+                                                <flux:icon name="minus" class="size-3.5" />
+                                            </button>
+                                            <span class="min-w-[2rem] text-center text-sm font-medium text-zinc-900 dark:text-white">{{ $item['qty'] }}</span>
+                                            <button wire:click="incrementQty({{ $index }})" class="px-2.5 py-1 text-zinc-500 transition hover:text-zinc-900 dark:hover:text-white">
+                                                <flux:icon name="plus" class="size-3.5" />
+                                            </button>
+                                        </div>
+                                        <p class="text-sm font-semibold text-zinc-900 dark:text-white">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Cart Footer --}}
+                @if (!empty($cart))
+                    <div class="border-t border-zinc-200 dark:border-zinc-700">
+                        {{-- Action Buttons --}}
+                        <div class="flex items-center justify-around border-b border-zinc-100 px-2 py-2 dark:border-zinc-700">
+                            <button wire:click="clearCart" wire:confirm="{{ __('Yakin ingin mengosongkan keranjang?') }}" class="flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-zinc-500 transition hover:bg-zinc-100 hover:text-red-500 dark:hover:bg-zinc-700">
+                                <flux:icon name="trash" class="size-5" />
+                                <span class="text-xs">{{ __('Hapus') }}</span>
+                            </button>
+                            <button
+                                wire:click="$set('showDiskonKeranjangSidebar', true)"
+                                x-on:click="showMobileCart = false"
+                                @class([
+                                    'flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 transition hover:bg-zinc-100 dark:hover:bg-zinc-700',
+                                    'text-emerald-600' => $diskonKeranjangAktif,
+                                    'text-zinc-500' => !$diskonKeranjangAktif,
+                                ])
+                            >
+                                <flux:icon name="receipt-percent" class="size-5" />
+                                <span class="text-xs">{{ __('Diskon') }}</span>
+                            </button>
+                        </div>
+
+                        {{-- Summary --}}
+                        <div class="space-y-1 px-4 py-3 text-sm">
+                            <div class="flex justify-between text-zinc-500">
+                                <span>{{ __('Subtotal') }}</span>
+                                <span>Rp {{ number_format($this->subtotal, 0, ',', '.') }}</span>
+                            </div>
+                            @if ($this->totalDiskonProduk > 0)
+                                <div class="flex justify-between text-emerald-600">
+                                    <span>{{ __('Diskon Produk') }}</span>
+                                    <span>-Rp {{ number_format($this->totalDiskonProduk, 0, ',', '.') }}</span>
+                                </div>
+                            @endif
+                            @if ($this->diskonKeranjangValue > 0)
+                                <div class="flex justify-between text-emerald-600">
+                                    <span>{{ __('Diskon Keranjang') }}</span>
+                                    <span>-Rp {{ number_format($this->diskonKeranjangValue, 0, ',', '.') }}</span>
+                                </div>
+                            @endif
+                            @if ($this->pajakAktif)
+                                <div class="flex justify-between items-center text-zinc-500">
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ $this->pajakAktif->nama }} ({{ $this->pajakAktif->persentase }}%)</span>
+                                        <flux:switch wire:model.live="applyTax" size="sm" />
+                                    </div>
+                                    <span>Rp {{ number_format($this->totalPajak, 0, ',', '.') }}</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Pay Button --}}
+                        <div class="p-3 pb-5">
+                            <button
+                                wire:click="openPayment"
+                                x-on:click="showMobileCart = false"
+                                @class([
+                                    'flex w-full items-center justify-between rounded-xl px-5 py-4 text-white font-semibold text-lg transition active:scale-[0.98]',
+                                    'bg-emerald-600 hover:bg-emerald-700' => !empty($cart),
+                                    'bg-zinc-300 dark:bg-zinc-600 cursor-not-allowed' => empty($cart),
+                                ])
+                                @if(empty($cart)) disabled @endif
+                            >
+                                <span>{{ __('Bayar') }}</span>
+                                <span>Rp {{ number_format($this->grandTotal, 0, ',', '.') }} ›</span>
+                            </button>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 
