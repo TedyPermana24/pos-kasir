@@ -499,7 +499,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
     </div>
 @elseif ($showPayment)
     {{-- ==================== PAYMENT VIEW ==================== --}}
-    <div class="flex h-screen flex-col bg-zinc-50 dark:bg-zinc-900 lg:flex-row overflow-hidden">
+    <div class="flex h-screen flex-col bg-zinc-50 dark:bg-zinc-900 lg:flex-row">
         {{-- Left: Order Summary --}}
         <div class="hidden lg:flex w-full flex-col border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 lg:w-96 lg:border-b-0 lg:border-r">
             <div class="flex items-center gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
@@ -561,7 +561,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
         </div>
 
         {{-- Right: Calculator --}}
-        <div class="flex flex-1 flex-col items-center overflow-y-auto p-4 lg:justify-center lg:p-6">
+        <div class="min-h-0 flex flex-1 flex-col items-center overflow-y-auto p-4 lg:justify-center lg:p-6">
             {{-- Mobile Back Button --}}
             <div class="mb-4 flex w-full max-w-md items-center gap-3 lg:hidden">
                 <button wire:click="closePayment" class="text-zinc-400 transition hover:text-zinc-700 dark:hover:text-white">
@@ -722,20 +722,33 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
 
             {{-- Product Grid --}}
             <div class="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4">
+                @php
+                    $cartQtyByVarian = collect($cart)->groupBy('varian_id')->map(fn ($items) => $items->sum('qty'));
+                @endphp
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     @forelse ($this->produks as $produk)
                         @if ($produk->varians->count() === 1)
+                            @php
+                                $singleVarianQty = $cartQtyByVarian->get($produk->varians->first()->id, 0);
+                            @endphp
                             <button
                                 wire:click="openDetail({{ $produk->varians->first()->id }})"
                                 wire:key="produk-{{ $produk->id }}"
-                                class="group flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:shadow-md active:scale-[0.97] dark:border-zinc-700 dark:bg-zinc-800"
+                                class="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:shadow-md active:scale-[0.97] dark:border-zinc-700 dark:bg-zinc-800"
                             >
-                                <div class="aspect-square w-full overflow-hidden bg-zinc-100 dark:bg-zinc-700">
+                                <div class="relative aspect-square w-full overflow-hidden bg-zinc-100 dark:bg-zinc-700">
                                     @if ($produk->foto_produk)
                                         <img src="{{ Storage::url($produk->foto_produk) }}" alt="{{ $produk->nama_produk }}" class="size-full object-cover transition group-hover:scale-105">
                                     @else
                                         <div class="flex size-full items-center justify-center">
                                             <flux:icon name="photo" class="size-10 text-zinc-300 dark:text-zinc-600" />
+                                        </div>
+                                    @endif
+                                    @if ($singleVarianQty > 0)
+                                        <div class="absolute inset-0 flex items-center justify-center bg-black/20">
+                                            <div class="flex size-10 items-center justify-center rounded-full bg-emerald-600 text-lg font-bold text-white shadow-lg ring-2 ring-white dark:ring-zinc-800">
+                                                {{ $singleVarianQty }}
+                                            </div>
                                         </div>
                                     @endif
                                 </div>
@@ -756,12 +769,22 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                                 wire:key="produk-{{ $produk->id }}"
                                 class="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:shadow-md active:scale-[0.97] dark:border-zinc-700 dark:bg-zinc-800"
                             >
-                                <div class="aspect-square w-full overflow-hidden bg-zinc-100 dark:bg-zinc-700">
+                                @php
+                                    $multiVarianQty = $produk->varians->sum(fn ($v) => $cartQtyByVarian->get($v->id, 0));
+                                @endphp
+                                <div class="relative aspect-square w-full overflow-hidden bg-zinc-100 dark:bg-zinc-700">
                                     @if ($produk->foto_produk)
                                         <img src="{{ Storage::url($produk->foto_produk) }}" alt="{{ $produk->nama_produk }}" class="size-full object-cover transition group-hover:scale-105">
                                     @else
                                         <div class="flex size-full items-center justify-center">
                                             <flux:icon name="photo" class="size-10 text-zinc-300 dark:text-zinc-600" />
+                                        </div>
+                                    @endif
+                                    @if ($multiVarianQty > 0)
+                                        <div class="absolute inset-0 flex items-center justify-center bg-black/20">
+                                            <div class="flex size-10 items-center justify-center rounded-full bg-emerald-600 text-lg font-bold text-white shadow-lg ring-2 ring-white dark:ring-zinc-800">
+                                                {{ $multiVarianQty }}
+                                            </div>
                                         </div>
                                     @endif
                                 </div>
