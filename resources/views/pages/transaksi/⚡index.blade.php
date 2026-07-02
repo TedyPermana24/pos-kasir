@@ -1001,13 +1001,8 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="translate-y-0"
                 x-transition:leave-end="translate-y-full"
-                class="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-3xl bg-white shadow-2xl dark:bg-zinc-800"
+                class="absolute inset-0 flex flex-col bg-white shadow-2xl dark:bg-zinc-800"
             >
-                {{-- Handle --}}
-                <div class="flex justify-center pt-3 pb-1">
-                    <div class="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-600"></div>
-                </div>
-
                 {{-- Cart Header --}}
                 <div class="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
                     <div class="flex items-center gap-2">
@@ -1019,8 +1014,8 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                     </button>
                 </div>
 
-                {{-- Cart Body --}}
-                <div class="flex-1 overflow-y-auto">
+                {{-- Cart Body (scrollable area includes items + summary) --}}
+                <div class="min-h-0 flex-1 overflow-y-auto">
                     @if (empty($cart))
                         <div class="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
                             <div class="mb-4 flex size-20 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-700">
@@ -1071,67 +1066,39 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                             @endforeach
                         </div>
                     @endif
+                    @endif
                 </div>
 
-                {{-- Cart Footer --}}
+                {{-- Cart Footer: Action buttons + Pay (always visible) --}}
                 @if (!empty($cart))
-                    <div class="border-t border-zinc-200 dark:border-zinc-700">
+                    <div class="shrink-0 border-t border-zinc-200 dark:border-zinc-700">
                         {{-- Action Buttons --}}
-                        <div class="flex items-center justify-around border-b border-zinc-100 px-2 py-2 dark:border-zinc-700">
-                            <button wire:click="clearCart" wire:confirm="{{ __('Yakin ingin mengosongkan keranjang?') }}" class="flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-zinc-500 transition hover:bg-zinc-100 hover:text-red-500 dark:hover:bg-zinc-700">
-                                <flux:icon name="trash" class="size-5" />
-                                <span class="text-xs">{{ __('Hapus') }}</span>
+                        <div class="flex items-center justify-around border-b border-zinc-100 px-2 py-1.5 dark:border-zinc-700">
+                            <button wire:click="clearCart" wire:confirm="{{ __('Yakin ingin mengosongkan keranjang?') }}" class="flex flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-zinc-500 transition hover:bg-zinc-100 hover:text-red-500 dark:hover:bg-zinc-700">
+                                <flux:icon name="trash" class="size-4" />
+                                <span class="text-[10px]">{{ __('Hapus') }}</span>
                             </button>
                             <button
                                 wire:click="$set('showDiskonKeranjangSidebar', true)"
                                 x-on:click="showMobileCart = false"
                                 @class([
-                                    'flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 transition hover:bg-zinc-100 dark:hover:bg-zinc-700',
+                                    'flex flex-col items-center gap-0.5 rounded-lg px-3 py-1 transition hover:bg-zinc-100 dark:hover:bg-zinc-700',
                                     'text-emerald-600' => $diskonKeranjangAktif,
                                     'text-zinc-500' => !$diskonKeranjangAktif,
                                 ])
                             >
-                                <flux:icon name="receipt-percent" class="size-5" />
-                                <span class="text-xs">{{ __('Diskon') }}</span>
+                                <flux:icon name="receipt-percent" class="size-4" />
+                                <span class="text-[10px]">{{ __('Diskon') }}</span>
                             </button>
                         </div>
 
-                        {{-- Summary --}}
-                        <div class="space-y-1 px-4 py-3 text-sm">
-                            <div class="flex justify-between text-zinc-500">
-                                <span>{{ __('Subtotal') }}</span>
-                                <span>Rp {{ number_format($this->subtotal, 0, ',', '.') }}</span>
-                            </div>
-                            @if ($this->totalDiskonProduk > 0)
-                                <div class="flex justify-between text-emerald-600">
-                                    <span>{{ __('Diskon Produk') }}</span>
-                                    <span>-Rp {{ number_format($this->totalDiskonProduk, 0, ',', '.') }}</span>
-                                </div>
-                            @endif
-                            @if ($this->diskonKeranjangValue > 0)
-                                <div class="flex justify-between text-emerald-600">
-                                    <span>{{ __('Diskon Keranjang') }}</span>
-                                    <span>-Rp {{ number_format($this->diskonKeranjangValue, 0, ',', '.') }}</span>
-                                </div>
-                            @endif
-                            @if ($this->pajakAktif)
-                                <div class="flex justify-between items-center text-zinc-500">
-                                    <div class="flex items-center gap-2">
-                                        <span>{{ $this->pajakAktif->nama }} ({{ $this->pajakAktif->persentase }}%)</span>
-                                        <flux:switch wire:model.live="applyTax" size="sm" />
-                                    </div>
-                                    <span>Rp {{ number_format($this->totalPajak, 0, ',', '.') }}</span>
-                                </div>
-                            @endif
-                        </div>
-
                         {{-- Pay Button --}}
-                        <div class="p-3 pb-5">
+                        <div class="p-2">
                             <button
                                 wire:click="openPayment"
                                 x-on:click="showMobileCart = false"
                                 @class([
-                                    'flex w-full items-center justify-between rounded-xl px-5 py-4 text-white font-semibold text-lg transition active:scale-[0.98]',
+                                    'flex w-full items-center justify-between rounded-xl px-5 py-3 text-white font-semibold text-base transition active:scale-[0.98]',
                                     'bg-emerald-600 hover:bg-emerald-700' => !empty($cart),
                                     'bg-zinc-300 dark:bg-zinc-600 cursor-not-allowed' => empty($cart),
                                 ])
