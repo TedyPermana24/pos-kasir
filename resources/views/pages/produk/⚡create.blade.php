@@ -28,6 +28,19 @@ new #[Title('Tambah Produk')] class extends Component {
     public string $stok = '';
     public string $minimum_stok = '';
 
+    public function mount()
+    {
+        $kategoriUmum = Kategori::where('nama', 'Umum')->first();
+        if ($kategoriUmum) {
+            $this->kategori_id = (string) $kategoriUmum->id;
+        }
+
+        $satuanUmum = Satuan::where('nama', 'Umum')->first();
+        if ($satuanUmum) {
+            $this->satuan_id = (string) $satuanUmum->id;
+        }
+    }
+
     /** Kategori modal state */
     public string $searchKategori = '';
     public string $namaKategoriBaru = '';

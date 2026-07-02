@@ -25,15 +25,9 @@ class DatabaseSeeder extends Seeder
             OutletSeeder::class,
         ]);
 
-        $kategoris = collect([
-            'Makanan', 'Minuman', 'Snack', 'Elektronik', 'Alat Tulis',
-            'Kebutuhan Rumah', 'Obat-obatan', 'Kosmetik',
-        ])->map(fn (string $nama) => Kategori::create(['nama' => $nama]));
+        $kategoris = collect(['Umum'])->map(fn (string $nama) => Kategori::create(['nama' => $nama]));
 
-        $satuans = collect([
-            'Pcs', 'Box', 'Kg', 'Liter', 'Pack',
-            'Lusin', 'Rim', 'Karton', 'Botol', 'Sachet',
-        ])->map(fn (string $nama) => Satuan::create(['nama' => $nama]));
+        $satuans = collect(['Umum'])->map(fn (string $nama) => Satuan::create(['nama' => $nama]));
 
         Produk::factory(20)
             ->recycle($kategoris)
