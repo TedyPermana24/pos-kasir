@@ -1066,7 +1066,6 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                             @endforeach
                         </div>
                     @endif
-                    @endif
                 </div>
 
                 {{-- Cart Footer: Action buttons + Pay (always visible) --}}
