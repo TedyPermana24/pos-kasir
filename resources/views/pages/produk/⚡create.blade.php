@@ -40,11 +40,10 @@ new #[Title('Tambah Produk')] class extends Component {
     public ?int $editingSatuanId = null;
     public string $editingSatuanNama = '';
 
-    public function generateSku(): void
+    #[Livewire\Attributes\On('sku-scanned')]
+    public function onSkuScanned($sku): void
     {
-        $prefix = Str::of($this->nama_produk)->upper()->limit(3, '')->toString();
-        $random = strtoupper(Str::random(5));
-        $this->sku = $prefix ? "{$prefix}-{$random}" : "SKU-{$random}";
+        $this->sku = $sku;
     }
 
     /** Kategori management */
@@ -332,8 +331,8 @@ new #[Title('Tambah Produk')] class extends Component {
                 <flux:field>
                     <div class="flex items-center justify-between">
                         <flux:label>{{ __('SKU') }}</flux:label>
-                        <flux:button variant="ghost" size="sm" icon="sparkles" wire:click="generateSku" data-test="generate-sku-button">
-                            {{ __('Auto') }}
+                        <flux:button variant="ghost" size="sm" icon="qr-code" onclick="Flux.modal('barcode-scanner').show()" data-test="scan-sku-button">
+                            {{ __('Scan') }}
                         </flux:button>
                     </div>
                     <flux:input wire:model="sku" placeholder="Contoh: SKU-0001-AB" data-test="sku-input" />
@@ -484,4 +483,6 @@ new #[Title('Tambah Produk')] class extends Component {
             </flux:modal.close>
         </div>
     </flux:modal>
+
+    <x-barcode-scanner eventName="sku-scanned" />
 </div>

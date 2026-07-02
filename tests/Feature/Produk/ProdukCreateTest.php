@@ -1,8 +1,6 @@
 <?php
 
 use App\Models\Kategori;
-use App\Models\Produk;
-use App\Models\ProdukVarian;
 use App\Models\Satuan;
 use App\Models\User;
 use Livewire\Livewire;

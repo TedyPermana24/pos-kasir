@@ -13,9 +13,9 @@ use Illuminate\Support\Str;
 class UserFactory extends Factory
 {
     /**
-     * The current password being used by the factory.
+     * The current PIN being used by the factory.
      */
-    protected static ?string $password;
+    protected static ?string $pin;
 
     /**
      * Define the model's default state.
@@ -24,13 +24,26 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $rawPin = str_pad((string) fake()->numberBetween(100000, 999999), 6, '0', STR_PAD_LEFT);
+
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => null,
+            'pin' => Hash::make($rawPin),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * Create a user with a specific PIN.
+     */
+    public function withPin(string $pin): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'pin' => Hash::make($pin),
+        ]);
     }
 
     /**

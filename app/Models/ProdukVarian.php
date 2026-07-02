@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Database\Factories\ProdukVarianFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -25,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Produk $produk
  * @property-read Satuan $satuan
+ * @property-read Collection<int, Promo> $promos
  */
 #[Fillable(['produk_id', 'satuan_id', 'sku', 'nama_varian', 'harga_modal', 'harga_jual', 'stok', 'minimum_stok'])]
 class ProdukVarian extends Model
@@ -59,5 +62,15 @@ class ProdukVarian extends Model
     public function satuan(): BelongsTo
     {
         return $this->belongsTo(Satuan::class);
+    }
+
+    /**
+     * @return BelongsToMany<Promo, $this>
+     */
+    public function promos(): BelongsToMany
+    {
+        return $this->belongsToMany(Promo::class, 'promo_produk_varian')
+            ->withPivot('minimal_harga_jual')
+            ->withTimestamps();
     }
 }

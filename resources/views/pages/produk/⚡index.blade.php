@@ -237,9 +237,11 @@ new #[Title('Manajemen Produk')] class extends Component {
             <flux:subheading>{{ __('Kelola semua produk toko Anda') }}</flux:subheading>
         </div>
 
-        <flux:button variant="primary" icon="plus" :href="route('produk.create')" wire:navigate data-test="add-product-button">
-            {{ __('Tambah Produk') }}
-        </flux:button>
+        @if (auth()->user()->hasPermission('produk.create'))
+            <flux:button variant="primary" icon="plus" :href="route('produk.create')" wire:navigate data-test="add-product-button">
+                {{ __('Tambah Produk') }}
+            </flux:button>
+        @endif
     </div>
 
     {{-- Search & Filter --}}
@@ -266,7 +268,9 @@ new #[Title('Manajemen Produk')] class extends Component {
                 <flux:table.column class="hidden lg:table-cell">{{ __('Kategori') }}</flux:table.column>
                 <flux:table.column>{{ __('Varian') }}</flux:table.column>
                 <flux:table.column>{{ __('Harga Jual') }}</flux:table.column>
-                <flux:table.column class="w-24"></flux:table.column>
+                @if (auth()->user()->hasPermission('produk.edit') || auth()->user()->hasPermission('produk.delete') || auth()->user()->hasPermission('produk.create'))
+                    <flux:table.column class="w-24"></flux:table.column>
+                @endif
             </flux:table.columns>
 
             <flux:table.rows>
@@ -306,22 +310,30 @@ new #[Title('Manajemen Produk')] class extends Component {
                                 Rp {{ number_format($minHarga, 0, ',', '.') }} - {{ number_format($maxHarga, 0, ',', '.') }}
                             @endif
                         </flux:table.cell>
-                        <flux:table.cell>
-                            <flux:dropdown position="bottom" align="end">
-                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
-                                <flux:menu>
-                                    <flux:menu.item icon="pencil-square" :href="route('produk.edit', $produk)" wire:navigate>
-                                        {{ __('Edit') }}
-                                    </flux:menu.item>
-                                    <flux:menu.item icon="plus" wire:click="openAddVarianModal({{ $produk->id }})">
-                                        {{ __('Tambah Varian') }}
-                                    </flux:menu.item>
-                                    <flux:menu.item icon="trash" variant="danger" wire:click="confirmDelete({{ $produk->id }})">
-                                        {{ __('Hapus') }}
-                                    </flux:menu.item>
-                                </flux:menu>
-                            </flux:dropdown>
-                        </flux:table.cell>
+                        @if (auth()->user()->hasPermission('produk.edit') || auth()->user()->hasPermission('produk.delete') || auth()->user()->hasPermission('produk.create'))
+                            <flux:table.cell>
+                                <flux:dropdown position="bottom" align="end">
+                                    <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
+                                    <flux:menu>
+                                        @if (auth()->user()->hasPermission('produk.edit'))
+                                            <flux:menu.item icon="pencil-square" :href="route('produk.edit', $produk)" wire:navigate>
+                                                {{ __('Edit') }}
+                                            </flux:menu.item>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('produk.create') || auth()->user()->hasPermission('produk.edit'))
+                                            <flux:menu.item icon="plus" wire:click="openAddVarianModal({{ $produk->id }})">
+                                                {{ __('Tambah Varian') }}
+                                            </flux:menu.item>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('produk.delete'))
+                                            <flux:menu.item icon="trash" variant="danger" wire:click="confirmDelete({{ $produk->id }})">
+                                                {{ __('Hapus') }}
+                                            </flux:menu.item>
+                                        @endif
+                                    </flux:menu>
+                                </flux:dropdown>
+                            </flux:table.cell>
+                        @endif
                     </flux:table.row>
                 @empty
                     <flux:table.row>
@@ -355,20 +367,28 @@ new #[Title('Manajemen Produk')] class extends Component {
                     <div class="min-w-0 flex-1 space-y-1">
                         <div class="flex items-start justify-between gap-2">
                             <flux:heading size="sm" class="line-clamp-2">{{ $produk->nama_produk }}</flux:heading>
-                            <flux:dropdown position="bottom" align="end">
-                                <flux:button variant="ghost" size="sm" class="-mt-2 -mr-2" icon="ellipsis-vertical" />
-                                <flux:menu>
-                                    <flux:menu.item icon="pencil-square" :href="route('produk.edit', $produk)" wire:navigate>
-                                        {{ __('Edit') }}
-                                    </flux:menu.item>
-                                    <flux:menu.item icon="plus" wire:click="openAddVarianModal({{ $produk->id }})">
-                                        {{ __('Tambah Varian') }}
-                                    </flux:menu.item>
-                                    <flux:menu.item icon="trash" variant="danger" wire:click="confirmDelete({{ $produk->id }})">
-                                        {{ __('Hapus') }}
-                                    </flux:menu.item>
-                                </flux:menu>
-                            </flux:dropdown>
+                            @if (auth()->user()->hasPermission('produk.edit') || auth()->user()->hasPermission('produk.delete') || auth()->user()->hasPermission('produk.create'))
+                                <flux:dropdown position="bottom" align="end">
+                                    <flux:button variant="ghost" size="sm" class="-mt-2 -mr-2" icon="ellipsis-vertical" />
+                                    <flux:menu>
+                                        @if (auth()->user()->hasPermission('produk.edit'))
+                                            <flux:menu.item icon="pencil-square" :href="route('produk.edit', $produk)" wire:navigate>
+                                                {{ __('Edit') }}
+                                            </flux:menu.item>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('produk.create') || auth()->user()->hasPermission('produk.edit'))
+                                            <flux:menu.item icon="plus" wire:click="openAddVarianModal({{ $produk->id }})">
+                                                {{ __('Tambah Varian') }}
+                                            </flux:menu.item>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('produk.delete'))
+                                            <flux:menu.item icon="trash" variant="danger" wire:click="confirmDelete({{ $produk->id }})">
+                                                {{ __('Hapus') }}
+                                            </flux:menu.item>
+                                        @endif
+                                    </flux:menu>
+                                </flux:dropdown>
+                            @endif
                         </div>
 
                         <div class="flex flex-wrap items-center gap-1.5">

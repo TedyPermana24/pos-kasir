@@ -6,7 +6,6 @@ use App\Models\Kategori;
 use App\Models\Produk;
 use App\Models\ProdukVarian;
 use App\Models\Satuan;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -19,10 +18,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => bcrypt(12345678),
+        $this->call([
+            JabatanSeeder::class,
+            PajakSeeder::class,
+            PromoSeeder::class,
+            OutletSeeder::class,
         ]);
 
         $kategoris = collect([

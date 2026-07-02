@@ -101,11 +101,15 @@ new #[Title('Edit Produk')] class extends Component {
         $this->varians = array_values($this->varians);
     }
 
-    public function generateSku(int $index): void
+    public ?int $scanningSkuIndex = null;
+
+    #[Livewire\Attributes\On('sku-scanned')]
+    public function onSkuScanned($sku): void
     {
-        $prefix = Str::of($this->nama_produk)->upper()->limit(3, '')->toString();
-        $random = strtoupper(Str::random(5));
-        $this->varians[$index]['sku'] = $prefix ? "{$prefix}-{$random}" : "SKU-{$random}";
+        if ($this->scanningSkuIndex !== null) {
+            $this->varians[$this->scanningSkuIndex]['sku'] = $sku;
+            $this->scanningSkuIndex = null;
+        }
     }
 
     /** Kategori management */
@@ -455,8 +459,8 @@ new #[Title('Edit Produk')] class extends Component {
                         <flux:field>
                             <div class="flex items-center justify-between">
                                 <flux:label>{{ __('SKU') }}</flux:label>
-                                <flux:button variant="ghost" size="sm" icon="sparkles" wire:click="generateSku({{ $index }})">
-                                    {{ __('Auto') }}
+                                <flux:button variant="ghost" size="sm" icon="qr-code" wire:click="$set('scanningSkuIndex', {{ $index }})" x-on:click="Flux.modal('barcode-scanner').show()">
+                                    {{ __('Scan') }}
                                 </flux:button>
                             </div>
                             <flux:input wire:model="varians.{{ $index }}.sku" placeholder="Contoh: SKU-0001-AB" />
@@ -611,4 +615,6 @@ new #[Title('Edit Produk')] class extends Component {
             </flux:modal.close>
         </div>
     </flux:modal>
+
+    <x-barcode-scanner eventName="sku-scanned" />
 </div>

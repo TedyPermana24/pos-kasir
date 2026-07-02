@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -36,6 +38,24 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+
+        // Authenticate using Name + 6-digit PIN
+        Fortify::authenticateUsing(function (Request $request) {
+            $name = $request->input('name');
+            $pin = $request->input('password');
+
+            if (! $name || ! $pin || strlen((string) $pin) !== 6) {
+                return null;
+            }
+
+            $user = User::where('name', $name)->first();
+
+            if ($user && Hash::check($pin, $user->pin ?? '')) {
+                return $user;
+            }
+
+            return null;
+        });
     }
 
     /**
@@ -59,7 +79,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(Str::lower($request->input('name', '')).'|'.$request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
         });

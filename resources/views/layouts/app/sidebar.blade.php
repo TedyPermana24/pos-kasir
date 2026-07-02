@@ -15,16 +15,50 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+
                 </flux:sidebar.group>
 
                 <flux:sidebar.group :heading="__('Manajemen')" class="grid">
-                    <flux:sidebar.item icon="cube" :href="route('produk.index')" :current="request()->routeIs('produk.*')" wire:navigate>
-                        {{ __('Produk') }}
-                    </flux:sidebar.item>
+                    @if (auth()->user()->hasPermission('produk.view'))
+                        <flux:sidebar.item icon="cube" :href="route('produk.index')" :current="request()->routeIs('produk.*')" wire:navigate>
+                            {{ __('Produk') }}
+                        </flux:sidebar.item>
+                    @endif
+                    
+                    @if (auth()->user()->hasPermission('promo.view'))
+                        <flux:sidebar.item icon="tag" :href="route('promo.index')" :current="request()->routeIs('promo.*')" wire:navigate>
+                            {{ __('Promo') }}
+                        </flux:sidebar.item>
+                    @endif
+                    
+                    @if (auth()->user()->hasPermission('pajak.manage'))
+                        <flux:sidebar.item icon="receipt-percent" :href="route('pajak.index')" :current="request()->routeIs('pajak.*')" wire:navigate>
+                            {{ __('Pajak') }}
+                        </flux:sidebar.item>
+                    @endif
+
+                    @if (auth()->user()->hasPermission('pegawai.manage'))
+                        <flux:sidebar.item icon="briefcase" :href="route('jabatan.index')" :current="request()->routeIs('jabatan.*')" wire:navigate>
+                            {{ __('Jabatan') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="users" :href="route('pegawai.index')" :current="request()->routeIs('pegawai.*')" wire:navigate>
+                            {{ __('Pegawai') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
+
+                
             </flux:sidebar.nav>
 
             <flux:spacer />
+
+            @if (auth()->user()->hasPermission('transaksi.create'))
+                <div class="px-2 pb-4">
+                    <flux:button variant="primary" :href="route('kasir.index')" wire:navigate class="w-full">
+                        {{ __('Mulai Kasir') }}
+                    </flux:button>
+                </div>
+            @endif
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
@@ -52,7 +86,6 @@
 
                                 <div class="grid flex-1 text-start text-sm leading-tight">
                                     <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
-                                    <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
                                 </div>
                             </div>
                         </div>
@@ -61,7 +94,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
-                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
+                        <flux:menu.item :href="route('appearance.edit')" icon="cog" wire:navigate>
                             {{ __('Settings') }}
                         </flux:menu.item>
                     </flux:menu.radio.group>
