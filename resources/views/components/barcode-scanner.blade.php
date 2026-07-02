@@ -28,8 +28,9 @@
     @pushonce('scripts')
         <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
         <script>
-            document.addEventListener('alpine:init', () => {
-                Alpine.data('barcodeScanner', (eventName) => ({
+            // Definisikan langsung ke window agar global dan langsung tersedia saat DOM di-render
+            window.barcodeScanner = function (eventName) {
+                return {
                     scanner: null,
                     isLoading: false,
                     error: null,
@@ -38,7 +39,6 @@
                         this.isLoading = true;
                         this.error = null;
                         
-                        // Prevent multiple instances
                         if (this.scanner) {
                             this.scanner.clear();
                         }
@@ -53,17 +53,12 @@
                                 aspectRatio: 1.777778
                             },
                             (decodedText, decodedResult) => {
-                                // On success
                                 this.stopScanner();
-                                
-                                // Dispatch event to Livewire with the scanned SKU
                                 $wire.dispatch(eventName, { sku: decodedText });
-                                
-                                // Close modal
                                 Flux.modal('barcode-scanner').close();
                             },
                             (errorMessage) => {
-                                // Ignore parse errors (happens when no barcode is in frame)
+                                // Abaikan error parse
                             }
                         ).then(() => {
                             this.isLoading = false;
@@ -84,8 +79,8 @@
                             });
                         }
                     }
-                }));
-            });
+                }
+            };
         </script>
     @endpushonce
 </flux:modal>
