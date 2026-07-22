@@ -245,44 +245,43 @@ new #[Title('Riwayat Transaksi')] #[Layout('layouts.pos')] class extends Compone
                     </button>
                 </div>
 
-                {{-- Date Shortcut Buttons --}}
-                <div class="mb-4 flex flex-wrap items-center gap-2">
+                {{-- Date Shortcut Filter Tabs (Left-aligned) --}}
+                <div class="mb-4 flex items-center border-b border-zinc-200/60 dark:border-zinc-700/60">
                     <button
                         type="button"
                         wire:click="filterHariIni"
-                        class="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-xs transition hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:hover:text-white"
+                        class="px-4 py-2 text-xs font-semibold transition border-b-2 -mb-px border-transparent text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white dark:hover:text-white"
                     >
                         {{ __('Hari Ini') }}
                     </button>
                     <button
                         type="button"
                         wire:click="filterMingguIni"
-                        class="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-xs transition hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:hover:text-white"
+                        class="px-4 py-2 text-xs font-semibold transition border-b-2 -mb-px border-transparent text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white dark:hover:text-white"
                     >
                         {{ __('Minggu Ini') }}
                     </button>
                     <button
                         type="button"
                         wire:click="filterBulanIni"
-                        class="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-xs transition hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:hover:text-white"
+                        class="px-4 py-2 text-xs font-semibold transition border-b-2 -mb-px border-transparent text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white dark:hover:text-white"
                     >
                         {{ __('Bulan Ini') }}
                     </button>
                 </div>
 
-                {{-- Filters Bar --}}
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-4 sm:items-end">
-                    <div class="sm:col-span-2">
-                        <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Cari no ref / pelanggan...') }}" clearable />
-                    </div>
-                    <div>
-                        <flux:input wire:model.live="tanggalMulai" type="date" label="{{ __('Dari Tanggal') }}" />
-                    </div>
-                    <div>
-                        <flux:input wire:model.live="tanggalSelesai" type="date" label="{{ __('Sampai Tanggal') }}" />
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-4 sm:items-end">
+                        <div class="sm:col-span-2">
+                            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('Cari no ref / pelanggan...') }}" clearable />
+                        </div>
+                        <div>
+                            <flux:input wire:model.live="tanggalMulai" type="date" label="{{ __('Dari Tanggal') }}" />
+                        </div>
+                        <div>
+                            <flux:input wire:model.live="tanggalSelesai" type="date" label="{{ __('Sampai Tanggal') }}" />
+                        </div>
                     </div>
                 </div>
-            </div>
 
             {{-- Table Card --}}
             <div class="rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-700 dark:bg-zinc-800 overflow-hidden">

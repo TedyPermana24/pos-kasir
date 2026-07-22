@@ -368,12 +368,7 @@ new #[Title('Tambah Produk')] class extends Component {
 
             @if ($aturStokModal)
                 <flux:field>
-                    <div class="flex items-center justify-between">
-                        <flux:label>{{ __('SKU') }}</flux:label>
-                        <flux:button variant="ghost" size="sm" icon="qr-code" onclick="Flux.modal('barcode-scanner').show()" data-test="scan-sku-button">
-                            {{ __('Scan') }}
-                        </flux:button>
-                    </div>
+                    <flux:label>{{ __('SKU') }}</flux:label>
                     <flux:input wire:model="sku" placeholder="Contoh: SKU-0001-AB" data-test="sku-input" />
                     <flux:error name="sku" />
                 </flux:field>
@@ -545,6 +540,4 @@ new #[Title('Tambah Produk')] class extends Component {
             </flux:modal.close>
         </div>
     </flux:modal>
-
-    <x-barcode-scanner eventName="sku-scanned" />
 </div>

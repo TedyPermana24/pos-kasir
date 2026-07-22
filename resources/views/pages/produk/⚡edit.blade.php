@@ -512,12 +512,7 @@ new #[Title('Edit Produk')] class extends Component {
                         @if ($varian['atur_stok'])
                             <div class="space-y-3 pt-2 border-t border-zinc-200/60 dark:border-zinc-700/60">
                                 <flux:field>
-                                    <div class="flex items-center justify-between">
-                                        <flux:label>{{ __('SKU') }}</flux:label>
-                                        <flux:button variant="ghost" size="sm" icon="qr-code" wire:click="$set('scanningSkuIndex', {{ $index }})" x-on:click="Flux.modal('barcode-scanner').show()">
-                                            {{ __('Scan SKU') }}
-                                        </flux:button>
-                                    </div>
+                                    <flux:label>{{ __('SKU') }}</flux:label>
                                     <flux:input wire:model="varians.{{ $index }}.sku" placeholder="Contoh: SKU-0001-AB" />
                                     <flux:error name="varians.{{ $index }}.sku" />
                                 </flux:field>
@@ -699,6 +694,4 @@ new #[Title('Edit Produk')] class extends Component {
             </flux:modal.close>
         </div>
     </flux:modal>
-
-    <x-barcode-scanner eventName="sku-scanned" />
 </div>

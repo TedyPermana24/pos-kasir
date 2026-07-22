@@ -302,49 +302,49 @@ new #[Title('Laporan Transaksi')] class extends Component {
                 </button>
             </div>
 
-            {{-- Date Shortcut Buttons --}}
-            <div class="flex flex-wrap items-center gap-2">
+            {{-- Date Shortcut Filter Tabs (Left-aligned) --}}
+            <div class="mb-4 flex items-center border-b border-zinc-200/60 dark:border-zinc-700/60">
                 <button
                     type="button"
                     wire:click="filterHariIni"
-                    class="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-xs transition hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:hover:text-white"
+                    class="px-4 py-2 text-xs font-semibold transition border-b-2 -mb-px border-transparent text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white dark:hover:text-white"
                 >
                     {{ __('Hari Ini') }}
                 </button>
                 <button
                     type="button"
                     wire:click="filterMingguIni"
-                    class="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-xs transition hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:hover:text-white"
+                    class="px-4 py-2 text-xs font-semibold transition border-b-2 -mb-px border-transparent text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white dark:hover:text-white"
                 >
                     {{ __('Minggu Ini') }}
                 </button>
                 <button
                     type="button"
                     wire:click="filterBulanIni"
-                    class="inline-flex items-center rounded-lg border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-xs transition hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-700 dark:hover:text-white"
+                    class="px-4 py-2 text-xs font-semibold transition border-b-2 -mb-px border-transparent text-zinc-500 hover:border-zinc-900 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-white dark:hover:text-white"
                 >
                     {{ __('Bulan Ini') }}
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:items-end">
-                <flux:field>
-                    <flux:label>{{ __('Tanggal Mulai') }}</flux:label>
-                    <flux:input type="date" wire:model.live="startDate" />
-                </flux:field>
-                
-                <flux:field>
-                    <flux:label>{{ __('Tanggal Akhir') }}</flux:label>
-                    <flux:input type="date" wire:model.live="endDate" />
-                </flux:field>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:items-end">
+                    <flux:field>
+                        <flux:label>{{ __('Tanggal Mulai') }}</flux:label>
+                        <flux:input type="date" wire:model.live="startDate" />
+                    </flux:field>
+                    
+                    <flux:field>
+                        <flux:label>{{ __('Tanggal Akhir') }}</flux:label>
+                        <flux:input type="date" wire:model.live="endDate" />
+                    </flux:field>
 
-                <div class="flex items-center">
-                    <flux:button wire:click="resetFilters" variant="subtle" class="w-full">
-                        {{ __('Reset Filter') }}
-                    </flux:button>
+                    <div class="flex items-center">
+                        <flux:button wire:click="resetFilters" variant="subtle" class="w-full">
+                            {{ __('Reset Filter') }}
+                        </flux:button>
+                    </div>
                 </div>
             </div>
-        </div>
 
         <div class="overflow-x-auto">
             <flux:table>
