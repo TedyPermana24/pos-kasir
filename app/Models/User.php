@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -27,6 +28,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $updated_at
  * @property-read Jabatan|null $jabatan
  * @property-read Collection<int, Permission> $permissions
+ * @property-read Collection<int, Transaksi> $transaksis
  */
 #[Fillable(['jabatan_id', 'name', 'email', 'password', 'pin'])]
 #[Hidden(['password', 'pin', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -55,6 +57,14 @@ class User extends Authenticatable
     public function jabatan(): BelongsTo
     {
         return $this->belongsTo(Jabatan::class);
+    }
+
+    /**
+     * @return HasMany<Transaksi, $this>
+     */
+    public function transaksis(): HasMany
+    {
+        return $this->hasMany(Transaksi::class);
     }
 
     /**

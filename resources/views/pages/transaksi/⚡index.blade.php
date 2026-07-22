@@ -40,6 +40,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
     public float $detailDiskonPerItem = 0;
     public string $detailDiskonTipe = 'nominal';
     public string $detailDiskonInput = '';
+    public ?int $detailStok = null;
 
     /** @var array<int, array{id: int, nama: string, minimal_harga_jual: float}> */
     public array $detailAvailablePromos = [];
@@ -71,6 +72,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
             ? \Illuminate\Support\Facades\Storage::url($varian->produk->foto_produk)
             : null;
         $this->detailHarga = (float) $varian->harga_jual;
+        $this->detailStok = $varian->stok;
         $this->detailQty = 1;
         $this->detailCatatan = '';
         $this->detailDiskon = false;
@@ -176,6 +178,28 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
             return;
         }
 
+        $varian = ProdukVarian::with('produk')->find($this->detailVarianId);
+        if ($varian && $varian->stok !== null) {
+            $existingQty = 0;
+            foreach ($this->cart as $item) {
+                if ($item['varian_id'] === $this->detailVarianId) {
+                    $existingQty += $item['qty'];
+                }
+            }
+
+            if ($varian->stok <= 0) {
+                Flux::toast(variant: 'danger', text: __('Stok :produk (:varian) habis.', ['produk' => $varian->produk->nama_produk, 'varian' => $varian->nama_varian]));
+
+                return;
+            }
+
+            if (($existingQty + $this->detailQty) > $varian->stok) {
+                Flux::toast(variant: 'danger', text: __('Stok :produk (:varian) tidak mencukupi (sisa stok: :stok).', ['produk' => $varian->produk->nama_produk, 'varian' => $varian->nama_varian, 'stok' => $varian->stok]));
+
+                return;
+            }
+        }
+
         $hargaSetelahDiskon = $this->detailHarga - $this->detailDiskonPerItem;
         $diskonNama = '';
         if ($this->detailDiskon && $this->detailPromoId) {
@@ -221,6 +245,23 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
     public function incrementQty(int $index): void
     {
         if (isset($this->cart[$index])) {
+            $item = $this->cart[$index];
+            $varian = ProdukVarian::with('produk')->find($item['varian_id']);
+            if ($varian && $varian->stok !== null) {
+                $totalQtyInCart = 0;
+                foreach ($this->cart as $cItem) {
+                    if ($cItem['varian_id'] === $item['varian_id']) {
+                        $totalQtyInCart += $cItem['qty'];
+                    }
+                }
+
+                if (($totalQtyInCart + 1) > $varian->stok) {
+                    Flux::toast(variant: 'warning', text: __('Stok :produk (:varian) tidak mencukupi (sisa stok: :stok).', ['produk' => $item['nama_produk'], 'varian' => $item['nama_varian'], 'stok' => $varian->stok]));
+
+                    return;
+                }
+            }
+
             $this->cart[$index]['qty']++;
             $harga = $this->cart[$index]['harga'] - $this->cart[$index]['diskon_per_item'];
             $this->cart[$index]['subtotal'] = $harga * $this->cart[$index]['qty'];
@@ -263,6 +304,17 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
             Flux::toast(variant: 'warning', text: __('Keranjang masih kosong.'));
 
             return;
+        }
+
+        foreach ($this->cart as $item) {
+            $varian = ProdukVarian::with('produk')->find($item['varian_id']);
+            if ($varian && $varian->stok !== null) {
+                if ($item['qty'] > $varian->stok) {
+                    Flux::toast(variant: 'danger', text: __('Stok :produk (:varian) tidak mencukupi (sisa stok: :stok).', ['produk' => $item['nama_produk'], 'varian' => $item['nama_varian'], 'stok' => $varian->stok]));
+
+                    return;
+                }
+            }
         }
 
         $this->bayar = '';
@@ -312,6 +364,17 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
             return;
         }
 
+        foreach ($this->cart as $item) {
+            $varian = ProdukVarian::with('produk')->find($item['varian_id']);
+            if ($varian && $varian->stok !== null) {
+                if ($item['qty'] > $varian->stok) {
+                    Flux::toast(variant: 'danger', text: __('Stok :produk (:varian) tidak mencukupi (sisa stok: :stok).', ['produk' => $item['nama_produk'], 'varian' => $item['nama_varian'], 'stok' => $varian->stok]));
+
+                    return;
+                }
+            }
+        }
+
         $kembalian = $bayarAmount - $grandTotal;
 
         $transaksi = Transaksi::create([
@@ -339,7 +402,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
             ]);
 
             $varian = ProdukVarian::find($item['varian_id']);
-            if ($varian && $varian->stok !== null && $varian->stok > 0) {
+            if ($varian && $varian->stok !== null) {
                 $varian->decrement('stok', $item['qty']);
             }
         }
@@ -744,7 +807,13 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                                             <flux:icon name="photo" class="size-10 text-zinc-300 dark:text-zinc-600" />
                                         </div>
                                     @endif
-                                    @if ($singleVarianQty > 0)
+                                    @if ($produk->varians->first()->stok !== null && $produk->varians->first()->stok <= 0)
+                                        <div class="absolute inset-0 flex items-center justify-center bg-black/50">
+                                            <span class="rounded-full bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow">
+                                                {{ __('Stok Habis') }}
+                                            </span>
+                                        </div>
+                                    @elseif ($singleVarianQty > 0)
                                         <div class="absolute inset-0 flex items-center justify-center bg-black/20">
                                             <div class="flex size-10 items-center justify-center rounded-full bg-emerald-600 text-lg font-bold text-white shadow-lg ring-2 ring-white dark:ring-zinc-800">
                                                 {{ $singleVarianQty }}
@@ -763,7 +832,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                             <button
                                 x-on:click="
                                     produkNama = @js($produk->nama_produk);
-                                    varianList = @js($produk->varians->map(fn ($v) => ['id' => $v->id, 'nama' => $v->nama_varian, 'harga' => $v->harga_jual, 'satuan' => $v->satuan->nama])->toArray());
+                                    varianList = @js($produk->varians->map(fn ($v) => ['id' => $v->id, 'nama' => $v->nama_varian, 'harga' => $v->harga_jual, 'satuan' => $v->satuan->nama, 'stok' => $v->stok])->toArray());
                                     showVarianPicker = true;
                                 "
                                 wire:key="produk-{{ $produk->id }}"
@@ -1181,7 +1250,18 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                         {{-- Diskon Toggle --}}
                         <div class="mb-4">
                             <div class="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-700/50">
-                                <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('Diskon') }}</span>
+                                <div>
+                                    <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('Diskon') }}</span>
+                                    @if (count($detailAvailablePromos) > 0)
+                                        <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                            {{ __('Ada :count promo yang aktif', ['count' => count($detailAvailablePromos)]) }}
+                                        </p>
+                                    @else
+                                        <p class="text-xs text-zinc-400">
+                                            {{ __('Tidak ada promo yang aktif') }}
+                                        </p>
+                                    @endif
+                                </div>
                                 <flux:switch wire:model.live="detailDiskon" />
                             </div>
                         </div>
@@ -1269,12 +1349,24 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                         </div>
 
                         {{-- Add Button --}}
-                        <button
-                            wire:click="addToCartFromDetail"
-                            class="w-full rounded-xl bg-emerald-600 py-3.5 text-center text-base font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.98]"
-                        >
-                            {{ __('Tambah') }} - Rp {{ number_format($detailSubtotal, 0, ',', '.') }}
-                        </button>
+                        @if ($this->detailStok !== null && $this->detailStok <= 0)
+                            <div class="mb-3 rounded-xl bg-red-50 p-3 text-center text-xs font-semibold text-red-600 dark:bg-red-950/40 dark:text-red-400">
+                                {{ __('Stok produk ini habis dan tidak dapat ditambahkan ke keranjang.') }}
+                            </div>
+                            <button
+                                disabled
+                                class="w-full rounded-xl bg-zinc-300 py-3.5 text-center text-base font-semibold text-zinc-500 cursor-not-allowed dark:bg-zinc-700 dark:text-zinc-400"
+                            >
+                                {{ __('Stok Habis') }}
+                            </button>
+                        @else
+                            <button
+                                wire:click="addToCartFromDetail"
+                                class="w-full rounded-xl bg-emerald-600 py-3.5 text-center text-base font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.98]"
+                            >
+                                {{ __('Tambah') }} - Rp {{ number_format($detailSubtotal, 0, ',', '.') }}
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -1293,12 +1385,21 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                     <div class="max-h-64 space-y-2 overflow-y-auto">
                         <template x-for="varian in varianList" :key="varian.id">
                             <button
-                                x-on:click="$wire.openDetail(varian.id); showVarianPicker = false;"
-                                class="flex w-full items-center justify-between rounded-xl border border-zinc-200 px-4 py-3 text-left transition hover:border-emerald-400 hover:bg-emerald-50 active:scale-[0.98] dark:border-zinc-600 dark:hover:border-emerald-500 dark:hover:bg-emerald-900/20"
+                                x-on:click="if (varian.stok !== null && varian.stok <= 0) return; $wire.openDetail(varian.id); showVarianPicker = false;"
+                                :class="varian.stok !== null && varian.stok <= 0 ? 'opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800' : 'hover:border-emerald-400 hover:bg-emerald-50 active:scale-[0.98] dark:hover:border-emerald-500 dark:hover:bg-emerald-900/20'"
+                                class="flex w-full items-center justify-between rounded-xl border border-zinc-200 px-4 py-3 text-left transition dark:border-zinc-600"
                             >
                                 <div>
                                     <p class="text-sm font-medium text-zinc-900 dark:text-white" x-text="varian.nama"></p>
-                                    <p class="text-xs text-zinc-400" x-text="varian.satuan"></p>
+                                    <p class="text-xs text-zinc-400">
+                                        <span x-text="varian.satuan"></span>
+                                        <template x-if="varian.stok !== null && varian.stok <= 0">
+                                            <span class="ml-2 font-semibold text-red-500">(Stok Habis)</span>
+                                        </template>
+                                        <template x-if="varian.stok !== null && varian.stok > 0">
+                                            <span class="ml-2 text-zinc-500" x-text="'Stok: ' + varian.stok"></span>
+                                        </template>
+                                    </p>
                                 </div>
                                 <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-400" x-text="'Rp ' + Number(varian.harga).toLocaleString('id-ID')"></p>
                             </button>

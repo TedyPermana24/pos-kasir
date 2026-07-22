@@ -47,7 +47,13 @@
                     @endif
                 </flux:sidebar.group>
 
-                
+                <flux:sidebar.group :heading="__('Laporan')" class="grid">
+                    @if (auth()->user()->hasPermission('laporan.view'))
+                        <flux:sidebar.item icon="document-text" :href="route('laporan.transaksi')" :current="request()->routeIs('laporan.transaksi')" wire:navigate>
+                            {{ __('Laporan Transaksi') }}
+                        </flux:sidebar.item>
+                    @endif
+                </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />

@@ -45,6 +45,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::livewire('kasir', 'pages::transaksi.index')->name('kasir.index');
         Route::livewire('kasir/riwayat', 'pages::transaksi.riwayat')->name('kasir.riwayat');
     });
+
+    Route::middleware('permission:laporan.view')->group(function () {
+        Route::livewire('laporan/transaksi', 'pages::laporan.transaksi')->name('laporan.transaksi');
+    });
 });
 
 require __DIR__.'/settings.php';

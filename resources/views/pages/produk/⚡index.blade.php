@@ -125,9 +125,9 @@ new #[Title('Manajemen Produk')] class extends Component {
             'nama_varian' => $validated['nama_varian'],
             'harga_jual' => $validated['harga_jual'],
             'sku' => $this->aturStokModal ? ($validated['sku'] ?: null) : null,
-            'harga_modal' => $this->aturStokModal ? ($validated['harga_modal'] ?: 0) : 0,
-            'stok' => $this->aturStokModal ? ($validated['stok'] ?: 0) : 0,
-            'minimum_stok' => $this->aturStokModal ? ($validated['minimum_stok'] ?: 0) : 0,
+            'harga_modal' => $this->aturStokModal ? (($validated['harga_modal'] ?? '') !== '' ? (float) $validated['harga_modal'] : null) : null,
+            'stok' => $this->aturStokModal ? (($validated['stok'] ?? '') !== '' ? (int) $validated['stok'] : 0) : null,
+            'minimum_stok' => $this->aturStokModal ? (($validated['minimum_stok'] ?? '') !== '' ? (int) $validated['minimum_stok'] : 0) : null,
         ]);
 
         Flux::modal('add-varian')->close();

@@ -56,7 +56,9 @@ new #[Title('Tambah Produk')] class extends Component {
     #[Livewire\Attributes\On('sku-scanned')]
     public function onSkuScanned($sku): void
     {
-        $this->sku = $sku;
+        $skuVal = is_array($sku) ? ($sku['sku'] ?? '') : (string) $sku;
+        $this->sku = $skuVal;
+        Flux::toast(variant: 'success', text: __('SKU berhasil dipindai: :sku', ['sku' => $skuVal]));
     }
 
     /** Kategori management */
@@ -214,9 +216,9 @@ new #[Title('Tambah Produk')] class extends Component {
             'nama_varian' => 'Default',
             'harga_jual' => $validated['harga_jual'],
             'sku' => $this->aturStokModal ? ($validated['sku'] ?: null) : null,
-            'harga_modal' => $this->aturStokModal ? ($validated['harga_modal'] ?: 0) : 0,
-            'stok' => $this->aturStokModal ? ($validated['stok'] ?: 0) : 0,
-            'minimum_stok' => $this->aturStokModal ? ($validated['minimum_stok'] ?: 0) : 0,
+            'harga_modal' => $this->aturStokModal ? (($validated['harga_modal'] ?? '') !== '' ? (float) $validated['harga_modal'] : null) : null,
+            'stok' => $this->aturStokModal ? (($validated['stok'] ?? '') !== '' ? (int) $validated['stok'] : 0) : null,
+            'minimum_stok' => $this->aturStokModal ? (($validated['minimum_stok'] ?? '') !== '' ? (int) $validated['minimum_stok'] : 0) : null,
         ]);
 
         Flux::toast(variant: 'success', text: __('Produk berhasil ditambahkan.'));
@@ -325,7 +327,31 @@ new #[Title('Tambah Produk')] class extends Component {
 
             <flux:field>
                 <flux:label>{{ __('Harga Jual') }}</flux:label>
-                <flux:input wire:model="harga_jual" type="number" prefix="Rp" placeholder="0" min="0" step="100" required data-test="harga-jual-input" />
+                <div x-data="{
+                    format(val) {
+                        if (val === null || val === undefined || val === '') return '';
+                        let num = Math.floor(parseFloat(val.toString()));
+                        return isNaN(num) || num <= 0 ? '' : Number(num).toLocaleString('id-ID');
+                    },
+                    update(e) {
+                        let digits = e.target.value.replace(/[^0-9]/g, '');
+                        let num = parseInt(digits, 10) || 0;
+                        $wire.set('harga_jual', num > 0 ? num : '', false);
+                        e.target.value = num > 0 ? Number(num).toLocaleString('id-ID') : '';
+                    }
+                }">
+                    <flux:input.group>
+                        <flux:input.group.prefix>Rp</flux:input.group.prefix>
+                        <flux:input
+                            type="text"
+                            x-init="$el.value = format($wire.get('harga_jual'))"
+                            x-on:input="update($event)"
+                            placeholder="0"
+                            required
+                            data-test="harga-jual-input"
+                        />
+                    </flux:input.group>
+                </div>
                 <flux:error name="harga_jual" />
             </flux:field>
         </flux:card>
@@ -354,7 +380,30 @@ new #[Title('Tambah Produk')] class extends Component {
 
                 <flux:field>
                     <flux:label>{{ __('Harga Modal') }}</flux:label>
-                    <flux:input wire:model="harga_modal" type="number" prefix="Rp" placeholder="0" min="0" step="100" data-test="harga-modal-input" />
+                    <div x-data="{
+                        format(val) {
+                            if (val === null || val === undefined || val === '') return '';
+                            let num = Math.floor(parseFloat(val.toString()));
+                            return isNaN(num) || num <= 0 ? '' : Number(num).toLocaleString('id-ID');
+                        },
+                        update(e) {
+                            let digits = e.target.value.replace(/[^0-9]/g, '');
+                            let num = parseInt(digits, 10) || 0;
+                            $wire.set('harga_modal', num > 0 ? num : '', false);
+                            e.target.value = num > 0 ? Number(num).toLocaleString('id-ID') : '';
+                        }
+                    }">
+                        <flux:input.group>
+                            <flux:input.group.prefix>Rp</flux:input.group.prefix>
+                            <flux:input
+                                type="text"
+                                x-init="$el.value = format($wire.get('harga_modal'))"
+                                x-on:input="update($event)"
+                                placeholder="0"
+                                data-test="harga-modal-input"
+                            />
+                        </flux:input.group>
+                    </div>
                     <flux:error name="harga_modal" />
                 </flux:field>
 

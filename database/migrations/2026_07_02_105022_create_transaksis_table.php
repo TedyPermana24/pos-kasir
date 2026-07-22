@@ -24,6 +24,10 @@ return new class extends Migration
             $table->decimal('grand_total', 15, 2)->default(0);
             $table->decimal('bayar', 15, 2)->default(0);
             $table->decimal('kembalian', 15, 2)->default(0);
+            $table->string('status')->default('selesai');
+            $table->text('alasan_pembatalan')->nullable();
+            $table->timestamp('cancelled_at')->nullable();
+            $table->foreignId('cancelled_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }

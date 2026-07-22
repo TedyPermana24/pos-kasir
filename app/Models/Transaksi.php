@@ -24,12 +24,33 @@ use Illuminate\Support\Carbon;
  * @property float $grand_total
  * @property float $bayar
  * @property float $kembalian
+ * @property string $status
+ * @property string|null $alasan_pembatalan
+ * @property Carbon|null $cancelled_at
+ * @property int|null $cancelled_by_user_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
+ * @property-read User|null $cancelledBy
  * @property-read Collection<int, TransaksiDetail> $details
  */
-#[Fillable(['no_referensi', 'user_id', 'nama_pelanggan', 'subtotal', 'total_pajak', 'total_diskon', 'diskon_produk', 'diskon_keranjang', 'grand_total', 'bayar', 'kembalian'])]
+#[Fillable([
+    'no_referensi',
+    'user_id',
+    'nama_pelanggan',
+    'subtotal',
+    'total_pajak',
+    'total_diskon',
+    'diskon_produk',
+    'diskon_keranjang',
+    'grand_total',
+    'bayar',
+    'kembalian',
+    'status',
+    'alasan_pembatalan',
+    'cancelled_at',
+    'cancelled_by_user_id',
+])]
 class Transaksi extends Model
 {
     /** @use HasFactory<TransaksiFactory> */
@@ -51,6 +72,7 @@ class Transaksi extends Model
             'grand_total' => 'decimal:2',
             'bayar' => 'decimal:2',
             'kembalian' => 'decimal:2',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -60,6 +82,14 @@ class Transaksi extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by_user_id');
     }
 
     /**

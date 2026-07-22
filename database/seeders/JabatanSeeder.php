@@ -28,7 +28,10 @@ class JabatanSeeder extends Seeder
             ['nama' => 'pajak.manage', 'keterangan' => 'Kelola pengaturan pajak'],
             ['nama' => 'transaksi.create', 'keterangan' => 'Buat transaksi baru (kasir)'],
             ['nama' => 'transaksi.view', 'keterangan' => 'Lihat riwayat transaksi'],
+            ['nama' => 'transaksi.cancel', 'keterangan' => 'Membatalkan transaksi'],
             ['nama' => 'laporan.view', 'keterangan' => 'Lihat laporan keuangan'],
+            ['nama' => 'laporan.omzet', 'keterangan' => 'Lihat omzet di laporan transaksi'],
+            ['nama' => 'stok.notifikasi', 'keterangan' => 'Lihat notifikasi stok minimal'],
             ['nama' => 'pegawai.manage', 'keterangan' => 'Kelola data pegawai & jabatan'],
             ['nama' => 'outlet.manage', 'keterangan' => 'Kelola profil outlet'],
         ];

@@ -20,7 +20,9 @@ new #[Title('Edit Produk')] class extends Component {
     public Produk $produk;
 
     public UploadedFile|string|null $foto_produk = null;
+
     public string $nama_produk = '';
+
     public string $kategori_id = '';
 
     /** @var array<int, array{id: int|null, nama_varian: string, satuan_id: string, harga_jual: string, atur_stok: bool, sku: string, harga_modal: string, stok: string, minimum_stok: string}> */
@@ -31,15 +33,22 @@ new #[Title('Edit Produk')] class extends Component {
 
     /** Kategori modal state */
     public string $searchKategori = '';
+
     public string $namaKategoriBaru = '';
+
     public ?int $editingKategoriId = null;
+
     public string $editingKategoriNama = '';
 
     /** Satuan modal state */
     public string $searchSatuan = '';
+
     public string $namaSatuanBaru = '';
+
     public ?int $editingSatuanId = null;
+
     public string $editingSatuanNama = '';
+
     public ?int $selectingSatuanForVarianIndex = null;
 
     public function mount(Produk $produk): void
@@ -50,7 +59,7 @@ new #[Title('Edit Produk')] class extends Component {
         $this->kategori_id = (string) $produk->kategori_id;
 
         foreach ($produk->varians as $varian) {
-            $hasStockData = $varian->sku || $varian->harga_modal > 0 || $varian->stok > 0 || $varian->minimum_stok > 0;
+            $hasStockData = $varian->stok !== null;
 
             $this->varians[] = [
                 'id' => $varian->id,
@@ -106,9 +115,11 @@ new #[Title('Edit Produk')] class extends Component {
     #[Livewire\Attributes\On('sku-scanned')]
     public function onSkuScanned($sku): void
     {
-        if ($this->scanningSkuIndex !== null) {
-            $this->varians[$this->scanningSkuIndex]['sku'] = $sku;
+        $skuVal = is_array($sku) ? ($sku['sku'] ?? '') : (string) $sku;
+        if ($this->scanningSkuIndex !== null && isset($this->varians[$this->scanningSkuIndex])) {
+            $this->varians[$this->scanningSkuIndex]['sku'] = $skuVal;
             $this->scanningSkuIndex = null;
+            Flux::toast(variant: 'success', text: __('SKU berhasil dipindai: :sku', ['sku' => $skuVal]));
         }
     }
 
@@ -294,9 +305,9 @@ new #[Title('Edit Produk')] class extends Component {
                 'nama_varian' => $varian['nama_varian'],
                 'harga_jual' => $varian['harga_jual'],
                 'sku' => $varian['atur_stok'] ? ($varian['sku'] ?: null) : null,
-                'harga_modal' => $varian['atur_stok'] ? ($varian['harga_modal'] ?: 0) : 0,
-                'stok' => $varian['atur_stok'] ? ($varian['stok'] ?: 0) : 0,
-                'minimum_stok' => $varian['atur_stok'] ? ($varian['minimum_stok'] ?: 0) : 0,
+                'harga_modal' => $varian['atur_stok'] ? (($varian['harga_modal'] ?? '') !== '' ? (float) $varian['harga_modal'] : null) : null,
+                'stok' => $varian['atur_stok'] ? (($varian['stok'] ?? '') !== '' ? (int) $varian['stok'] : 0) : null,
+                'minimum_stok' => $varian['atur_stok'] ? (($varian['minimum_stok'] ?? '') !== '' ? (int) $varian['minimum_stok'] : 0) : null,
             ];
 
             if ($varian['id']) {
@@ -398,36 +409,51 @@ new #[Title('Edit Produk')] class extends Component {
             </flux:field>
         </flux:card>
 
-        {{-- Varian Section --}}
-        <flux:card class="space-y-4 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <flux:heading size="sm">{{ __('Varian Produk') }}</flux:heading>
-                    <flux:subheading>{{ __('Tentukan varian, harga, dan satuan produk') }}</flux:subheading>
-                </div>
-                <flux:button variant="ghost" size="sm" icon="plus" wire:click="addVarian" data-test="add-varian-button">
-                    {{ __('Tambah') }}
-                </flux:button>
+        {{-- Varian Section Header --}}
+        <div class="flex items-center justify-between pt-2">
+            <div>
+                <flux:heading size="lg">{{ __('Daftar Varian Produk') }}</flux:heading>
+                <flux:subheading>{{ __('Setiap varian memiliki harga, satuan, dan pengaturan stok mandiri') }}</flux:subheading>
             </div>
+            <flux:button variant="primary" size="sm" icon="plus" wire:click="addVarian" data-test="add-varian-button">
+                {{ __('Tambah Varian') }}
+            </flux:button>
+        </div>
 
+        {{-- Individual Variant Cards --}}
+        <div class="space-y-4">
             @foreach ($varians as $index => $varian)
-                <div wire:key="varian-{{ $index }}" class="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                    <div class="flex items-center justify-between">
-                        <flux:heading size="sm">{{ __('Varian :num', ['num' => $index + 1]) }}</flux:heading>
+                <flux:card wire:key="varian-{{ $index }}" class="space-y-4 p-6 border border-zinc-200 dark:border-zinc-700">
+                    {{-- Card Header Bar --}}
+                    <div class="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+                        <div class="flex items-center gap-2">
+                            <span class="rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                {{ __('Varian #:num', ['num' => $index + 1]) }}
+                            </span>
+                            @if (!empty($varian['nama_varian']))
+                                <span class="text-sm font-semibold text-zinc-900 dark:text-white">
+                                    {{ $varian['nama_varian'] }}
+                                </span>
+                            @endif
+                        </div>
+
                         @if (count($varians) > 1)
-                            <flux:button variant="ghost" size="xs" icon="trash" class="text-red-500" wire:click="removeVarian({{ $index }})" />
+                            <flux:button variant="ghost" size="xs" icon="trash" class="text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40" wire:click="removeVarian({{ $index }})">
+                                {{ __('Hapus Varian') }}
+                            </flux:button>
                         @endif
                     </div>
 
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {{-- Form Fields Grid --}}
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <flux:field>
-                            <flux:label>{{ __('Nama Varian') }}</flux:label>
+                            <flux:label>{{ __('Nama Varian') }} <span class="text-rose-500">*</span></flux:label>
                             <flux:input wire:model="varians.{{ $index }}.nama_varian" placeholder="Contoh: Kecil, Besar, 500ml" required />
                             <flux:error name="varians.{{ $index }}.nama_varian" />
                         </flux:field>
 
                         <flux:field>
-                            <flux:label>{{ __('Satuan') }}</flux:label>
+                            <flux:label>{{ __('Satuan') }} <span class="text-rose-500">*</span></flux:label>
                             @php
                                 $satuanId = $varians[$index]['satuan_id'] ?? null;
                                 $satuanName = $satuanId ? $this->satuans->firstWhere('id', $satuanId)?->nama : null;
@@ -445,65 +471,123 @@ new #[Title('Edit Produk')] class extends Component {
                     </div>
 
                     <flux:field>
-                        <flux:label>{{ __('Harga Jual') }}</flux:label>
-                        <flux:input wire:model="varians.{{ $index }}.harga_jual" type="number" prefix="Rp" placeholder="0" min="0" step="100" required />
+                        <flux:label>{{ __('Harga Jual') }} <span class="text-rose-500">*</span></flux:label>
+                        <div x-data="{
+                            format(val) {
+                                if (val === null || val === undefined || val === '') return '';
+                                let num = Math.floor(parseFloat(val.toString()));
+                                return isNaN(num) || num <= 0 ? '' : Number(num).toLocaleString('id-ID');
+                            },
+                            update(e) {
+                                let digits = e.target.value.replace(/[^0-9]/g, '');
+                                let num = parseInt(digits, 10) || 0;
+                                $wire.set('varians.{{ $index }}.harga_jual', num > 0 ? num : '', false);
+                                e.target.value = num > 0 ? Number(num).toLocaleString('id-ID') : '';
+                            }
+                        }">
+                            <flux:input.group>
+                                <flux:input.group.prefix>Rp</flux:input.group.prefix>
+                                <flux:input
+                                    type="text"
+                                    x-init="$el.value = format($wire.get('varians.{{ $index }}.harga_jual'))"
+                                    x-on:input="update($event)"
+                                    placeholder="0"
+                                    required
+                                />
+                            </flux:input.group>
+                        </div>
                         <flux:error name="varians.{{ $index }}.harga_jual" />
                     </flux:field>
 
-                    <div class="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/50">
-                        <flux:text class="text-sm">{{ __('Atur Stok & Modal?') }}</flux:text>
-                        <flux:switch wire:model.live="varians.{{ $index }}.atur_stok" />
-                    </div>
-
-                    @if ($varian['atur_stok'])
-                        <flux:field>
-                            <div class="flex items-center justify-between">
-                                <flux:label>{{ __('SKU') }}</flux:label>
-                                <flux:button variant="ghost" size="sm" icon="qr-code" wire:click="$set('scanningSkuIndex', {{ $index }})" x-on:click="Flux.modal('barcode-scanner').show()">
-                                    {{ __('Scan') }}
-                                </flux:button>
+                    {{-- Stock & Modal Management Sub-card --}}
+                    <div class="rounded-xl border border-zinc-200/80 bg-zinc-50 p-4 dark:border-zinc-700/80 dark:bg-zinc-800/60 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-semibold text-zinc-900 dark:text-white">{{ __('Atur Stok & Modal?') }}</span>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Aktifkan jika varian ini menggunakan batas stok dan harga modal') }}</p>
                             </div>
-                            <flux:input wire:model="varians.{{ $index }}.sku" placeholder="Contoh: SKU-0001-AB" />
-                            <flux:error name="varians.{{ $index }}.sku" />
-                        </flux:field>
-
-                        <flux:field>
-                            <flux:label>{{ __('Harga Modal') }}</flux:label>
-                            <flux:input wire:model="varians.{{ $index }}.harga_modal" type="number" prefix="Rp" placeholder="0" min="0" step="100" />
-                            <flux:error name="varians.{{ $index }}.harga_modal" />
-                        </flux:field>
-
-                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <flux:field>
-                                <flux:label>{{ __('Stok') }}</flux:label>
-                                <flux:input wire:model="varians.{{ $index }}.stok" type="number" placeholder="0" min="0" />
-                                <flux:error name="varians.{{ $index }}.stok" />
-                            </flux:field>
-
-                            <flux:field>
-                                <flux:label>{{ __('Minimum Stok') }}</flux:label>
-                                <flux:input wire:model="varians.{{ $index }}.minimum_stok" type="number" placeholder="0" min="0" />
-                                <flux:error name="varians.{{ $index }}.minimum_stok" />
-                            </flux:field>
+                            <flux:switch wire:model.live="varians.{{ $index }}.atur_stok" />
                         </div>
-                    @endif
-                </div>
+
+                        @if ($varian['atur_stok'])
+                            <div class="space-y-3 pt-2 border-t border-zinc-200/60 dark:border-zinc-700/60">
+                                <flux:field>
+                                    <div class="flex items-center justify-between">
+                                        <flux:label>{{ __('SKU') }}</flux:label>
+                                        <flux:button variant="ghost" size="sm" icon="qr-code" wire:click="$set('scanningSkuIndex', {{ $index }})" x-on:click="Flux.modal('barcode-scanner').show()">
+                                            {{ __('Scan SKU') }}
+                                        </flux:button>
+                                    </div>
+                                    <flux:input wire:model="varians.{{ $index }}.sku" placeholder="Contoh: SKU-0001-AB" />
+                                    <flux:error name="varians.{{ $index }}.sku" />
+                                </flux:field>
+
+                                <flux:field>
+                                    <flux:label>{{ __('Harga Modal') }}</flux:label>
+                                    <div x-data="{
+                                        format(val) {
+                                            if (val === null || val === undefined || val === '') return '';
+                                            let num = Math.floor(parseFloat(val.toString()));
+                                            return isNaN(num) || num <= 0 ? '' : Number(num).toLocaleString('id-ID');
+                                        },
+                                        update(e) {
+                                            let digits = e.target.value.replace(/[^0-9]/g, '');
+                                            let num = parseInt(digits, 10) || 0;
+                                            $wire.set('varians.{{ $index }}.harga_modal', num > 0 ? num : '', false);
+                                            e.target.value = num > 0 ? Number(num).toLocaleString('id-ID') : '';
+                                        }
+                                    }">
+                                        <flux:input.group>
+                                            <flux:input.group.prefix>Rp</flux:input.group.prefix>
+                                            <flux:input
+                                                type="text"
+                                                x-init="$el.value = format($wire.get('varians.{{ $index }}.harga_modal'))"
+                                                x-on:input="update($event)"
+                                                placeholder="0"
+                                            />
+                                        </flux:input.group>
+                                    </div>
+                                    <flux:error name="varians.{{ $index }}.harga_modal" />
+                                </flux:field>
+
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <flux:field>
+                                        <flux:label>{{ __('Stok Saat Ini') }}</flux:label>
+                                        <flux:input wire:model="varians.{{ $index }}.stok" type="number" placeholder="0" min="0" />
+                                        <flux:error name="varians.{{ $index }}.stok" />
+                                    </flux:field>
+
+                                    <flux:field>
+                                        <flux:label>{{ __('Minimum Stok') }}</flux:label>
+                                        <flux:input wire:model="varians.{{ $index }}.minimum_stok" type="number" placeholder="0" min="0" />
+                                        <flux:error name="varians.{{ $index }}.minimum_stok" />
+                                    </flux:field>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </flux:card>
             @endforeach
-        </flux:card>
+
+            {{-- Bottom Add Variant Button --}}
+            <button
+                type="button"
+                wire:click="addVarian"
+                class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 py-3.5 text-sm font-semibold text-zinc-600 transition hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700 active:scale-[0.99] dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-emerald-500 dark:hover:bg-emerald-950/30"
+            >
+                <flux:icon name="plus" class="size-4" />
+                <span>{{ __('Tambah Varian Baru') }}</span>
+            </button>
+        </div>
 
         {{-- Actions --}}
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 pt-2">
             <flux:button variant="primary" type="submit" class="flex-1 sm:flex-none" data-test="save-button">
                 {{ __('Simpan Perubahan') }}
             </flux:button>
             <flux:button :href="route('produk.index')" wire:navigate>
                 {{ __('Batal') }}
             </flux:button>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <flux:text class="text-sm text-zinc-500">{{ __('Satuan yang dicari tidak ada?') }}</flux:text>
-            <flux:button variant="ghost" size="sm" wire:click="showSatuanModal">{{ __('Kelola Satuan') }}</flux:button>
         </div>
     </form>
 

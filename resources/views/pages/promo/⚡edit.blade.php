@@ -42,12 +42,13 @@ new #[Title('Edit Promo')] class extends Component {
         }
     }
 
-    public function addVarian(int $produkVarianId, string $produkNama, string $varianNama, string $hargaJual, string $hargaModal): void
+    public function addVarian(int $produkVarianId, string $produkNama, string $varianNama, string $hargaJual, string $hargaModal = '0'): void
     {
         // Check if already added
         foreach ($this->selectedVarians as $v) {
             if ($v['produk_varian_id'] === $produkVarianId) {
                 Flux::toast(variant: 'warning', text: __('Varian ini sudah ditambahkan.'));
+                $this->searchProduk = '';
 
                 return;
             }
@@ -61,6 +62,8 @@ new #[Title('Edit Promo')] class extends Component {
             'harga_modal' => $hargaModal,
             'minimal_harga_jual' => $hargaJual,
         ];
+
+        $this->searchProduk = '';
     }
 
     public function removeVarian(int $index): void
@@ -211,7 +214,7 @@ new #[Title('Edit Promo')] class extends Component {
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0 flex-1">
                                     <div class="font-medium text-zinc-900 dark:text-white">{{ $varian['produk_nama'] }}</div>
-                                    <div class="text-sm text-zinc-500">{{ $varian['varian_nama'] }} — Harga Jual: Rp {{ number_format($varian['harga_jual'], 0, ',', '.') }} | Harga Modal: Rp {{ number_format($varian['harga_modal'], 0, ',', '.') }}</div>
+                                    <div class="text-sm text-zinc-500">{{ $varian['varian_nama'] }} — Harga Jual: Rp {{ number_format($varian['harga_jual'], 0, ',', '.') }} | Harga Modal: Rp {{ number_format($varian['harga_modal'] ?? 0, 0, ',', '.') }}</div>
                                 </div>
                                 <flux:button variant="ghost" size="xs" icon="x-mark" class="shrink-0 text-red-500" wire:click="removeVarian({{ $index }})" />
                             </div>
@@ -219,16 +222,31 @@ new #[Title('Edit Promo')] class extends Component {
                             <div class="mt-3">
                                 <flux:field>
                                     <flux:label>{{ __('Minimal Harga Jual') }}</flux:label>
-                                    <flux:input
-                                        wire:model="selectedVarians.{{ $index }}.minimal_harga_jual"
-                                        type="number"
-                                        prefix="Rp"
-                                        placeholder="0"
-                                        min="0"
-                                        step="100"
-                                        required
-                                        data-test="minimal-harga-input-{{ $index }}"
-                                    />
+                                    <div x-data="{
+                                        format(val) {
+                                            if (val === null || val === undefined || val === '') return '';
+                                            let num = Math.floor(parseFloat(val.toString()));
+                                            return isNaN(num) || num <= 0 ? '' : Number(num).toLocaleString('id-ID');
+                                        },
+                                        update(e) {
+                                            let digits = e.target.value.replace(/[^0-9]/g, '');
+                                            let num = parseInt(digits, 10) || 0;
+                                            $wire.set('selectedVarians.{{ $index }}.minimal_harga_jual', num > 0 ? num : '', false);
+                                            e.target.value = num > 0 ? Number(num).toLocaleString('id-ID') : '';
+                                        }
+                                    }">
+                                        <flux:input.group>
+                                            <flux:input.group.prefix>Rp</flux:input.group.prefix>
+                                            <flux:input
+                                                type="text"
+                                                x-init="$el.value = format($wire.get('selectedVarians.{{ $index }}.minimal_harga_jual'))"
+                                                x-on:input="update($event)"
+                                                placeholder="0"
+                                                required
+                                                data-test="minimal-harga-input-{{ $index }}"
+                                            />
+                                        </flux:input.group>
+                                    </div>
                                     <flux:error name="selectedVarians.{{ $index }}.minimal_harga_jual" />
                                     <flux:text class="text-xs text-zinc-400 mt-1">
                                         {{ __('Kasir tidak bisa memberikan harga di bawah nominal ini') }}
