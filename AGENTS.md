@@ -52,10 +52,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - You must only create documentation files if explicitly requested by the user.
 
-## UI / UX Design
-
-- Ensure the application is always mobile and tablet friendly. This is a point-of-sale (pos-kasir) application where the majority of users will be operating it on tablets, so responsive design is critical.
-
 ## Replies
 
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.

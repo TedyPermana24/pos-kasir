@@ -188,12 +188,12 @@
                     ->whereNotNull('stok')
                     ->whereRaw('stok <= COALESCE(minimum_stok, 0)')
                     ->orderBy('stok', 'asc')
-                    ->get();
+                    ->paginate(10, ['*'], 'stok_page');
             @endphp
 
-            @if ($lowStockVarians->isNotEmpty())
-                <div class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-700 dark:bg-zinc-800">
-                    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            @if ($lowStockVarians->total() > 0)
+                <div class="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-xs dark:border-zinc-700 dark:bg-zinc-800">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
                             <div class="rounded-xl bg-zinc-100 p-3 text-zinc-900 dark:bg-zinc-700 dark:text-white">
                                 <flux:icon name="bell" class="size-6" />
@@ -201,7 +201,7 @@
                             <div>
                                 <h3 class="text-lg font-bold text-zinc-900 dark:text-white">{{ __('Peringatan Stok Produk') }}</h3>
                                 <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                                    {{ __('Terdapat :count varian produk dengan stok menyentuh atau di bawah batas minimum.', ['count' => $lowStockVarians->count()]) }}
+                                    {{ __('Terdapat :count varian produk dengan stok menyentuh atau di bawah batas minimum.', ['count' => number_format($lowStockVarians->total(), 0, ',', '.')]) }}
                                 </p>
                             </div>
                         </div>
@@ -239,6 +239,11 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+
+                    {{-- Pagination links --}}
+                    <div class="pt-2">
+                        {{ $lowStockVarians->appends(request()->query())->links() }}
                     </div>
                 </div>
             @else

@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Kategori;
-use App\Models\Produk;
-use App\Models\ProdukVarian;
 use App\Models\Satuan;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -25,20 +23,7 @@ class DatabaseSeeder extends Seeder
             OutletSeeder::class,
         ]);
 
-        $kategoris = collect(['Umum'])->map(fn (string $nama) => Kategori::create(['nama' => $nama]));
-
-        $satuans = collect(['Umum'])->map(fn (string $nama) => Satuan::create(['nama' => $nama]));
-
-        Produk::factory(20)
-            ->recycle($kategoris)
-            ->create()
-            ->each(function (Produk $produk) use ($satuans) {
-                $varianCount = rand(1, 3);
-
-                ProdukVarian::factory($varianCount)
-                    ->for($produk)
-                    ->recycle($satuans)
-                    ->create();
-            });
+        Kategori::firstOrCreate(['nama' => 'Umum']);
+        Satuan::firstOrCreate(['nama' => 'Umum']);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Produk\ImportProdukAction;
 use App\Models\Produk;
 use App\Models\Satuan;
 use Flux\Flux;
@@ -9,10 +10,17 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 new #[Title('Manajemen Produk')] class extends Component {
-    use WithPagination;
+    use WithFileUploads, WithPagination;
+
+    /** Import state */
+    public $importFile = null;
+    public array $importErrors = [];
+    public ?int $importSuccessCount = null;
+    public ?int $importFailedCount = null;
 
     #[Url(as: 'q')]
     public string $search = '';
@@ -192,6 +200,131 @@ new #[Title('Manajemen Produk')] class extends Component {
         Flux::toast(variant: 'success', text: __('Satuan berhasil dihapus.'));
     }
 
+    public function openImportModal(): void
+    {
+        $this->resetImportState();
+        Flux::modal('import-produk')->show();
+    }
+
+    public function resetImportState(): void
+    {
+        $this->importFile = null;
+        $this->importErrors = [];
+        $this->importSuccessCount = null;
+        $this->importFailedCount = null;
+    }
+
+    public function downloadTemplateCsv()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="template_import_produk.csv"',
+        ];
+
+        $csvHeader = "nama_produk,kategori,nama_varian,satuan,harga_jual,sku,harga_modal,stok,minimum_stok\n";
+        $csvExample1 = "Kopi Susu Gula Aren,Minuman,Sedang,Cup,15000,6977010000001,8000,50,5\n";
+        $csvExample2 = "Kopi Susu Gula Aren,Minuman,Besar,Cup,18000,6977010000002,10000,40,5\n";
+        $csvExample3 = "Roti Bakar Cokelat,Makanan,Default,Pcs,15000,,,,,\n";
+
+        return response()->streamDownload(function () use ($csvHeader, $csvExample1, $csvExample2, $csvExample3) {
+            echo "\xEF\xBB\xBF";
+            echo $csvHeader;
+            echo $csvExample1;
+            echo $csvExample2;
+            echo $csvExample3;
+        }, 'template_import_produk.csv', $headers);
+    }
+
+    public function downloadTemplateXlsx()
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Template Import Produk');
+
+        $headers = [
+            'nama_produk', 'kategori', 'nama_varian', 'satuan', 'harga_jual', 'sku', 'harga_modal', 'stok', 'minimum_stok',
+        ];
+
+        foreach ($headers as $colIndex => $header) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+            $sheet->setCellValue("{$colLetter}1", $header);
+            $sheet->getStyle("{$colLetter}1")->getFont()->setBold(true);
+        }
+
+        $rows = [
+            ['Kopi Susu Gula Aren', 'Minuman', 'Sedang', 'Cup', 15000, '6977010000001', 8000, 50, 5],
+            ['Kopi Susu Gula Aren', 'Minuman', 'Besar', 'Cup', 18000, '6977010000002', 10000, 40, 5],
+            ['Roti Bakar Cokelat', 'Makanan', 'Default', 'Pcs', 15000, null, null, null, null],
+        ];
+
+        foreach ($rows as $rowIndex => $rowData) {
+            $rowNum = $rowIndex + 2;
+            foreach ($rowData as $colIndex => $val) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+                if ($colIndex === 5 && $val !== null) {
+                    $sheet->setCellValueExplicit("{$colLetter}{$rowNum}", (string) $val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                } else {
+                    $sheet->setCellValue("{$colLetter}{$rowNum}", $val);
+                }
+            }
+        }
+
+        foreach (range(1, count($headers)) as $colIndex) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+        }
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, 'template_import_produk.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function downloadTemplate()
+    {
+        return $this->downloadTemplateCsv();
+    }
+
+    public function import(ImportProdukAction $action): void
+    {
+        $this->validate([
+            'importFile' => ['required', 'file', 'max:10240'],
+        ], [
+            'importFile.required' => __('Silakan pilih file Excel atau CSV terlebih dahulu.'),
+            'importFile.file' => __('File yang diunggah tidak valid.'),
+            'importFile.max' => __('Ukuran file maksimal 10MB.'),
+        ]);
+
+        $ext = strtolower($this->importFile->getClientOriginalExtension());
+        if (! in_array($ext, ['xlsx', 'xls', 'csv', 'txt'])) {
+            $this->addError('importFile', __('Format file harus berupa .xlsx, .xls, atau .csv'));
+
+            return;
+        }
+
+        $filePath = $this->importFile->getRealPath();
+        $rows = $action->parseSpreadsheet($filePath);
+
+        if (empty($rows)) {
+            $this->importErrors = [__('File Excel/CSV kosong atau tidak memiliki format header yang valid.')];
+
+            return;
+        }
+
+        $result = $action->execute($rows);
+
+        $this->importSuccessCount = $result['success'];
+        $this->importFailedCount = $result['failed'];
+        $this->importErrors = $result['errors'];
+
+        if ($result['success'] > 0) {
+            Flux::toast(variant: 'success', text: __(':count produk berhasil di-import.', ['count' => $result['success']]));
+            $this->resetPage();
+        }
+    }
+
     #[Computed]
     public function selectedSatuan()
     {
@@ -238,9 +371,14 @@ new #[Title('Manajemen Produk')] class extends Component {
         </div>
 
         @if (auth()->user()->hasPermission('produk.create'))
-            <flux:button variant="primary" icon="plus" :href="route('produk.create')" wire:navigate data-test="add-product-button">
-                {{ __('Tambah Produk') }}
-            </flux:button>
+            <div class="flex items-center gap-2">
+                <flux:button variant="subtle" icon="arrow-up-tray" wire:click="openImportModal" data-test="import-product-button">
+                    {{ __('Import Excel/CSV') }}
+                </flux:button>
+                <flux:button variant="primary" icon="plus" :href="route('produk.create')" wire:navigate data-test="add-product-button">
+                    {{ __('Tambah Produk') }}
+                </flux:button>
+            </div>
         @endif
     </div>
 
@@ -587,6 +725,90 @@ new #[Title('Manajemen Produk')] class extends Component {
             <flux:modal.close>
                 <flux:button class="w-full">{{ __('Tutup') }}</flux:button>
             </flux:modal.close>
+        </div>
+    </flux:modal>
+
+    {{-- Import Modal --}}
+    <flux:modal name="import-produk" class="md:w-[500px] space-y-6">
+        <div class="space-y-1">
+            <flux:heading size="lg">{{ __('Import Produk') }}</flux:heading>
+            <flux:subheading>{{ __('Unggah file Excel atau CSV untuk menambahkan data secara massal.') }}</flux:subheading>
+        </div>
+
+        <div class="space-y-4">
+            {{-- Download Template Section --}}
+            <div class="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-zinc-700 dark:text-zinc-300">{{ __('Unduh Template Contoh') }}</span>
+                    <span class="text-[11px] text-zinc-400">(.xlsx / .csv)</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <flux:button variant="subtle" size="xs" icon="arrow-down-tray" wire:click="downloadTemplateXlsx">
+                        {{ __('Excel (.xlsx)') }}
+                    </flux:button>
+                    <flux:button variant="subtle" size="xs" icon="arrow-down-tray" wire:click="downloadTemplateCsv">
+                        {{ __('CSV (.csv)') }}
+                    </flux:button>
+                </div>
+            </div>
+
+            <form wire:submit="import" class="space-y-4">
+                <flux:field>
+                    <flux:label>{{ __('Pilih File Excel / CSV') }}</flux:label>
+                    <div class="relative flex items-center justify-center w-full">
+                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer bg-zinc-50 dark:bg-zinc-900/50 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <flux:icon name="arrow-up-tray" class="size-7 mb-2 text-zinc-400 dark:text-zinc-500" />
+                                <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                    {{ __('Klik atau pilih file dari perangkat Anda') }}
+                                </p>
+                                <p class="text-[11px] text-zinc-400 mt-1">
+                                    {{ __('Format .xlsx, .xls, .csv (Maks. 10MB)') }}
+                                </p>
+                            </div>
+                            <input type="file" wire:model="importFile" accept=".xlsx,.xls,.csv,.txt" class="hidden" id="import-file-input" />
+                        </label>
+                    </div>
+                    <div wire:loading wire:target="importFile" class="mt-1.5 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400">
+                        <flux:icon name="arrow-path" class="size-3.5 animate-spin" />
+                        <span>{{ __('Mengunggah file ke server...') }}</span>
+                    </div>
+                    @if ($importFile)
+                        <div class="mt-2 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-medium">
+                            <flux:icon name="check-circle" class="size-4" />
+                            <span>{{ __('File terpilih: :name', ['name' => $importFile->getClientOriginalName()]) }}</span>
+                        </div>
+                    @endif
+                    <flux:error name="importFile" class="mt-1" />
+                </flux:field>
+
+                @if ($importSuccessCount !== null)
+                    <div class="p-3 rounded-xl {{ $importFailedCount > 0 ? 'bg-amber-50 text-amber-900 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : 'bg-emerald-50 text-emerald-900 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' }} text-xs font-medium">
+                        {{ __('Hasil Import: :success berhasil, :failed gagal', ['success' => $importSuccessCount, 'failed' => $importFailedCount]) }}
+                    </div>
+                @endif
+
+                @if (!empty($importErrors))
+                    <div class="max-h-36 overflow-y-auto p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 space-y-1">
+                        <div class="font-semibold">{{ __('Pesan Detail Error:') }}</div>
+                        <ul class="list-disc list-inside space-y-0.5">
+                            @foreach ($importErrors as $err)
+                                <li>{{ $err }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">{{ __('Batal') }}</flux:button>
+                    </flux:modal.close>
+                    <flux:button type="submit" variant="primary" icon="arrow-up-tray" wire:loading.attr="disabled" wire:target="importFile, import">
+                        <span wire:loading.remove wire:target="importFile, import">{{ __('Proses Import') }}</span>
+                        <span wire:loading wire:target="importFile, import">{{ __('Memproses...') }}</span>
+                    </flux:button>
+                </div>
+            </form>
         </div>
     </flux:modal>
 </div>
