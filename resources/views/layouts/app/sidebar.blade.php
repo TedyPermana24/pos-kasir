@@ -66,6 +66,13 @@
                 </div>
             @endif
 
+            <div id="pwa-install-banner" class="px-2 pb-4 hidden">
+                <flux:button variant="subtle" onclick="window.installPwaApp()" class="w-full flex items-center justify-center gap-2">
+                    <flux:icon name="arrow-down-tray" class="size-4" />
+                    {{ __('Install Aplikasi POS') }}
+                </flux:button>
+            </div>
+
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
 
