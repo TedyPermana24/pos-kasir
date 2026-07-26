@@ -18,8 +18,6 @@
 <meta name="apple-mobile-web-app-title" content="POS Kasir">
 
 <script>
-    let deferredPwaPrompt = null;
-
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
@@ -27,29 +25,6 @@
                 .catch(err => console.error('Service Worker registration failed:', err));
         });
     }
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPwaPrompt = e;
-        const btn = document.getElementById('pwa-install-banner');
-        if (btn) btn.classList.remove('hidden');
-    });
-
-    window.installPwaApp = function () {
-        if (deferredPwaPrompt) {
-            deferredPwaPrompt.prompt();
-            deferredPwaPrompt.userChoice.then((choice) => {
-                if (choice.outcome === 'accepted') {
-                    console.log('PWA Install accepted');
-                }
-                deferredPwaPrompt = null;
-                const btn = document.getElementById('pwa-install-banner');
-                if (btn) btn.classList.add('hidden');
-            });
-        } else {
-            alert('Untuk menginstall POS Kasir:\n1. Pastikan Anda mengakses via HTTPS / localhost.\n2. Buka menu browser (titik 3 di kanan atas).\n3. Pilih "Install aplikasi" / "Tambahkan ke Layar Utama".');
-        }
-    };
 </script>
 
 @fonts
