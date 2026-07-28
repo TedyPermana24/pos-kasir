@@ -8,14 +8,28 @@ use App\Models\Promo;
 use App\Models\Transaksi;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
+    use WithPagination;
+
     public string $search = '';
     public string $kategoriFilter = '';
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedKategoriFilter(): void
+    {
+        $this->resetPage();
+    }
 
     /**
      * Cart items.
@@ -81,12 +95,13 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
         $this->detailDiskonTipe = 'nominal';
         $this->detailDiskonInput = '';
 
-        // Find available promos for this varian
+        // Find available promos for this varian (eager load pivot to avoid N+1)
         $this->detailAvailablePromos = Promo::aktif()
             ->whereHas('produkVarians', fn (Builder $q) => $q->where('produk_varian_id', $varianId))
+            ->with(['produkVarians' => fn (BelongsToMany $q) => $q->where('produk_varian_id', $varianId)])
             ->get()
-            ->map(function (Promo $promo) use ($varianId) {
-                $pivot = $promo->produkVarians()->where('produk_varian_id', $varianId)->first()?->pivot;
+            ->map(function (Promo $promo) {
+                $pivot = $promo->produkVarians->first()?->pivot;
 
                 return [
                     'id' => $promo->id,
@@ -509,7 +524,7 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
             })
             ->when($this->kategoriFilter, fn (Builder $query) => $query->where('kategori_id', $this->kategoriFilter))
             ->orderBy('nama_produk')
-            ->get();
+            ->simplePaginate(20);
     }
 }; ?>
 
@@ -883,6 +898,13 @@ new #[Title('Kasir')] #[Layout('layouts.pos')] class extends Component {
                         </div>
                     @endforelse
                 </div>
+
+                {{-- Pagination Links --}}
+                @if ($this->produks->hasPages())
+                    <div class="mt-4 flex justify-center">
+                        {{ $this->produks->links('vendor.livewire.simple-tailwind') }}
+                    </div>
+                @endif
             </div>
         </div>
 
